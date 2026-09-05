@@ -1,6 +1,114 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Study Bible Creator</title><link rel="stylesheet" href="/styles.css"></head>
-<body><header><div><h1>Study Bible Creator</h1><p>Local-first publishing QA · Prototype v0.1.0</p></div><span class="badge">No AI used in this milestone</span></header>
-<main><section class="card"><h2>1. Project</h2><div id="projectPicker"></div><details><summary>Create a new project</summary><form id="projectForm" class="grid"><label>Project name<input name="name" value="Tamil Study Bible" required></label><label>Source language<input name="sourceLanguageName" value="English"></label><label>Source code<input name="sourceLanguageCode" value="en"></label><label>Target language<input name="targetLanguageName" value="Tamil"></label><label>Target code<input name="targetLanguageCode" value="ta"></label><label>Script<input name="targetScript" value="Tamil"></label><button>Create project</button></form></details></section>
-<section class="card"><h2>2. Import</h2><p class="muted">USFM/SFM, CSV, TSV, DOCX and JSON. Every import is previewed before it is stored.</p><form id="importForm" class="grid"><label>File<input id="file" type="file" accept=".usfm,.sfm,.csv,.tsv,.docx,.json" required></label><label>Language code<input id="languageCode" value="ta"></label><label>Resource role<select id="resourceRole"><option value="target_scripture">Target Scripture</option><option value="source_scripture">Source Scripture</option><option value="study_notes">Study Notes</option><option value="footnotes">Footnotes</option><option value="cross_references">Cross-references</option><option value="maps_charts">Maps / Charts</option><option value="introductions">Introductions</option><option value="other">Other</option></select></label><button>Analyze import</button></form><div id="preview"></div></section>
-<section class="card"><h2>3. Project status</h2><div id="stats" class="stats"></div></section>
-<section class="card"><h2>Safety rule</h2><div class="safety">Scripture records are stored as <code>protected_scripture</code>. The QA system may flag or suggest, but automatic or AI modification of Scripture is not permitted.</div></section></main><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Study Bible Creator</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">SB</div><div><strong>Study Bible Creator</strong><span>Publishing QA workspace</span></div></div>
+    <button class="project-switcher" id="projectSwitcher"><div class="project-glyph" id="projectGlyph">SB</div><div><small>Current project</small><strong id="projectName">No project</strong><span id="projectLang">Create or open a project</span></div><b>⌄</b></button>
+    <nav>
+      <button class="nav-item active" data-view="overview"><span>⌂</span><em>Overview</em></button>
+      <button class="nav-item" data-view="books"><span>▤</span><em>Books & content</em></button>
+      <button class="nav-item" data-view="import"><span>⇩</span><em>Import center</em><b id="importBadge" class="pill hidden">0</b></button>
+      <button class="nav-item" data-view="qa"><span>✓</span><em>QA review</em><b id="qaBadge" class="pill danger hidden">0</b></button>
+      <button class="nav-item" data-view="language"><span>文</span><em>Language & style</em></button>
+      <button class="nav-item" data-view="publish"><span>↗</span><em>Publish & export</em></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-status"><i></i><div><strong>Local-first project</strong><span>Database is source of truth</span></div></div>
+      <button class="nav-item" id="newProjectBtn"><span>＋</span><em>New project</em></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><div class="breadcrumbs" id="breadcrumbs">Study Bible Creator</div><h1 id="pageTitle">Project overview</h1></div>
+      <div class="top-actions"><span class="local-chip"><i></i> Local</span><button class="ghost-btn" id="refreshBtn">↻ Refresh</button><button class="primary-btn" id="quickImport">＋ Import content</button></div>
+    </header>
+
+    <section class="view active" id="view-overview">
+      <div id="emptyState" class="empty-state hidden"><div class="empty-icon">SB</div><h2>Create your first Study Bible project</h2><p>All imported Scripture and Study Bible content will be normalized into a local SQLite database before proofreading.</p><button class="primary-btn" id="emptyCreate">Create project</button></div>
+      <div id="overviewContent">
+        <div class="hero-grid">
+          <article class="hero-card"><div class="eyebrow">LOCAL-FIRST PUBLISHING QA</div><h2 id="overviewTitle">Publication workspace</h2><p id="overviewCopy">Import source and translated Study Bible content. Deterministic checks run locally before selective AI is ever needed.</p><div class="hero-actions"><button class="primary-btn" data-jump="import">Import content</button><button class="small-btn" data-jump="qa">Run local QA</button></div></article>
+          <article class="safety-card"><div class="shield">◆</div><div><small>Scripture protection</small><strong>Human approval enforced</strong><p>Protected Scripture can be flagged for review, but automatic overwrite is blocked by the data layer.</p></div><span class="status-chip success">Active</span></article>
+        </div>
+        <div class="metric-grid" id="metricGrid"></div>
+        <div class="content-grid">
+          <div class="panel"><div class="panel-head"><div><small>Project content</small><h3>Books & resources</h3></div><button class="small-btn" data-jump="books">Open library</button></div><div id="bookOverview" class="resource-list"></div></div>
+          <div class="panel"><div class="panel-head"><div><small>Import history</small><h3>Recent files</h3></div><button class="small-btn" data-jump="import">Import more</button></div><div id="recentFiles" class="activity-list"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-books">
+      <div class="workspace-toolbar">
+        <div class="toolbar-group"><select id="bookSelect"></select><select id="chapterSelect"></select><select id="typeSelect"><option value="">All content types</option><option value="scripture">Scripture</option><option value="study_note">Study notes</option><option value="section_heading">Headings</option><option value="footnote">Footnotes</option><option value="cross_reference">Cross-references</option><option value="introduction">Introductions</option></select></div>
+        <div class="toolbar-group"><span id="contentCount" class="muted">0 units</span><button class="small-btn" id="reloadContent">↻ Reload</button></div>
+      </div>
+      <div class="editor-layout">
+        <aside class="content-nav"><div class="content-nav-head"><strong id="contentNavTitle">Content</strong><span id="contentNavMeta">Select a book</span></div><div id="contentList" class="scroll-list"></div></aside>
+        <div class="editor-pane" id="editorPane">
+          <div class="editor-empty"><div>▤</div><h3>Select a content unit</h3><p>Source and target content will appear side by side.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-import">
+      <div class="import-grid">
+        <div class="panel upload-panel">
+          <div class="upload-icon">⇩</div><h2>Import project content</h2><p>Files are analyzed locally. Nothing is committed until you review the preflight result.</p>
+          <div class="dropzone" id="dropzone"><strong>Drop files here</strong><span>USFM/SFM, CSV, TSV, JSON, DOC, DOCX</span><button class="primary-btn" id="chooseFiles">Choose files</button><input type="file" id="filePicker" multiple accept=".usfm,.sfm,.csv,.tsv,.json,.doc,.docx"></div>
+          <div class="format-row"><span>USFM</span><span>SFM</span><span>CSV</span><span>TSV</span><span>JSON</span><span>DOC</span><span>DOCX</span></div>
+        </div>
+        <div class="panel import-settings"><div class="panel-head"><div><small>Import settings</small><h3>Classify incoming content</h3></div></div>
+          <label>Resource type<select id="resourceRole"><option value="source_scripture">Source Scripture</option><option value="target_scripture">Target Scripture</option><option value="study_notes" selected>Study notes / bilingual table</option><option value="footnotes">Footnotes</option><option value="cross_references">Cross-references</option><option value="introductions">Introductions / back matter</option><option value="maps_charts">Maps & charts</option><option value="other">Other</option></select></label>
+          <label>Language handling<select id="languageCode"><option value="">Auto / bilingual columns</option></select></label>
+          <div class="setting-note"><span>◆</span><p><strong>Protected Scripture</strong>Imported Scripture is stored as protected content. Conflicting later imports become review conflicts instead of overwrites.</p></div>
+          <button class="primary-btn full" id="analyzeBtn" disabled>Analyze selected files</button>
+        </div>
+      </div>
+      <div class="panel queue-panel"><div class="panel-head"><div><small>Selected files</small><h3>Import queue</h3></div><button class="small-btn" id="clearQueue">Clear</button></div><div id="fileQueue" class="file-queue"><p class="empty-line">No files selected.</p></div></div>
+      <div id="importPreview"></div>
+    </section>
+
+    <section class="view" id="view-qa">
+      <div class="qa-toolbar"><div><h2>Publishing QA</h2><p>Local deterministic checks first. No AI is used in v0.3.</p></div><button class="primary-btn" id="runQa">Run local QA</button></div>
+      <div class="qa-layout">
+        <aside class="filters"><strong>Severity</strong><button class="filter active" data-severity=""><span class="sev all"></span>All <b id="sevAll">0</b></button><button class="filter" data-severity="critical"><span class="sev critical"></span>Critical <b id="sevCritical">0</b></button><button class="filter" data-severity="high"><span class="sev high"></span>High <b id="sevHigh">0</b></button><button class="filter" data-severity="medium"><span class="sev medium"></span>Medium <b id="sevMedium">0</b></button><button class="filter" data-severity="low"><span class="sev low"></span>Low <b id="sevLow">0</b></button><button class="filter" data-severity="info"><span class="sev info"></span>Info <b id="sevInfo">0</b></button></aside>
+        <div class="issue-list"><div class="issue-list-head"><div><strong>Open findings</strong><span id="issueCount">0 issues</span></div></div><div id="issues"></div></div>
+        <div class="review-panel" id="issueDetail"><div class="editor-empty"><div>✓</div><h3>Select a QA finding</h3><p>Evidence and source/target comparison will appear here.</p></div></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-language">
+      <div class="language-hero panel"><div><div class="language-glyph" id="languageGlyph">文</div><div><small>Self-building language profile</small><h2 id="languageTitle">Target language</h2><p>Corpus observations remain suggestions until a human editor approves them.</p></div></div><span class="status-chip">Local analysis</span></div>
+      <div class="content-grid"><div class="panel"><div class="panel-head"><div><small>Corpus</small><h3>Frequent vocabulary</h3></div><button class="small-btn" id="refreshVocab">Refresh</button></div><div id="vocabList" class="vocab-grid"></div></div><div class="panel"><div class="panel-head"><div><small>Editorial memory</small><h3>Approved & observed rules</h3></div></div><div id="ruleList" class="rule-stack"></div></div></div>
+    </section>
+
+    <section class="view" id="view-publish">
+      <div class="publish-hero panel"><div><small>EXPORT FROM DATABASE</small><h2>Publish & exchange</h2><p>Exports are generated from the canonical database, never by modifying the original import files.</p></div><span class="status-chip success">Database-first</span></div>
+      <div class="export-grid" id="exportGrid">
+        <button class="export-card" data-format="usfm"><span>USFM</span><div><strong>USFM</strong><p>Structured Scripture/resource text</p></div><em>→</em></button>
+        <button class="export-card" data-format="sfm"><span>SFM</span><div><strong>SFM</strong><p>Standard format marker text</p></div><em>→</em></button>
+        <button class="export-card" data-format="csv"><span>CSV</span><div><strong>CSV</strong><p>Spreadsheet exchange</p></div><em>→</em></button>
+        <button class="export-card" data-format="tsv"><span>TSV</span><div><strong>TSV</strong><p>Tab-separated exchange</p></div><em>→</em></button>
+        <button class="export-card" data-format="json"><span>JSON</span><div><strong>JSON</strong><p>Canonical structured data</p></div><em>→</em></button>
+        <button class="export-card disabled" disabled><span>DOCX</span><div><strong>DOCX</strong><p>Planned publishing exporter</p></div><em>M9</em></button>
+      </div>
+      <div class="panel publication-gate"><div class="panel-head"><div><small>Publication gate</small><h3>Current readiness checks</h3></div></div><div id="publicationGate"></div></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="projectModal"><form class="modal-card" id="projectForm"><div class="modal-head"><div><small>NEW PROJECT</small><h2>Create Study Bible project</h2></div><button type="button" class="icon-btn" data-close>×</button></div><div class="form-grid"><label class="span2">Project name<input name="name" required placeholder="Tamil Study Bible"></label><label>Source language<input name="sourceLanguageName" value="English" required></label><label>Source language code<input name="sourceLanguageCode" value="en" required></label><label>Target language<input name="targetLanguageName" placeholder="Tamil" required></label><label>Target language code<input name="targetLanguageCode" placeholder="ta" required></label><label>Target script<input name="targetScript" placeholder="Tamil"></label><label>Text direction<select name="textDirection"><option value="ltr">Left to right</option><option value="rtl">Right to left</option></select></label></div><div class="modal-actions"><button type="button" class="small-btn" data-close>Cancel</button><button class="primary-btn" type="submit">Create project</button></div></form></div>
+<div class="modal-backdrop" id="switcherModal"><div class="modal-card compact"><div class="modal-head"><div><small>PROJECTS</small><h2>Open a project</h2></div><button class="icon-btn" data-close>×</button></div><div id="projectList" class="project-list"></div><div class="modal-actions"><button class="primary-btn" id="switcherNew">＋ New project</button></div></div></div>
+<div class="toast" id="toast"></div>
+<script src="app.js" type="module"></script>
+</body>
+</html>

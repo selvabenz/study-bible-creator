@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Runtime / local project data
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+data/*.studybible
+*.db-shm
+*.db-wal
+
+# Imported user content / temporary conversions
+tmp/
+imports/
+exports/
+*.tmp
+~$*.doc
+~$*.docx
+
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs / coverage
+*.log
+coverage/
+.nyc_output/
+
+# Build artifacts
+dist/
+build/
+out/
+src-tauri/target/
+release/
+*.msi
+*.dmg
+*.AppImage
+*.deb
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test artifacts
+.test-output/

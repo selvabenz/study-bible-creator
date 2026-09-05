@@ -27,3 +27,14 @@ File -> fingerprint -> parser -> semantic items -> duplicate comparison -> previ
 ## Formats
 V0.1 import: USFM/SFM, CSV, TSV, JSON, DOCX.
 V0.1 export core: USFM/SFM, CSV, TSV, JSON. DOCX export is scheduled for the next milestone because it requires a carefully tested publishing schema rather than a lossy plain-text document.
+
+## Legacy DOC adapter
+Legacy `.doc` is treated as an input transport format, never as the canonical project representation. The current development adapter:
+1. validates the OLE/Compound Binary DOC signature;
+2. locates a local LibreOffice/soffice executable;
+3. converts the DOC to a temporary DOCX without changing the source file;
+4. parses the temporary DOCX through the normal Word semantic importer;
+5. deletes temporary conversion files;
+6. stores provenance indicating that the original format was DOC.
+
+This boundary is deliberately replaceable. The Tauri production line may substitute a smaller native converter/parser without changing import APIs or database semantics.

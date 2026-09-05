@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Study Bible Creator · Interactive Wireframe</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">SB</div><div><strong>Study Bible Creator</strong><span>Publishing workspace</span></div></div>
+    <div class="project-switcher" id="projectSwitcher">
+      <div class="project-icon">த</div>
+      <div class="project-copy"><small>Current project</small><strong>Tamil Study Bible</strong><span>English → Tamil</span></div>
+      <button class="icon-btn" aria-label="Switch project">⌄</button>
+    </div>
+    <nav>
+      <button class="nav-item active" data-view="overview"><span>⌂</span>Overview</button>
+      <button class="nav-item" data-view="books"><span>▤</span>Books & content</button>
+      <button class="nav-item" data-view="import"><span>⇩</span>Import center <b class="pill">2</b></button>
+      <button class="nav-item" data-view="qa"><span>✓</span>QA review <b class="pill danger">38</b></button>
+      <button class="nav-item" data-view="language"><span>文</span>Language & style</button>
+      <button class="nav-item" data-view="publish"><span>↗</span>Publish & export</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-status"><i></i><div><strong>Local project</strong><span>All changes saved</span></div></div>
+      <button class="nav-item"><span>⚙</span>Settings</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><div class="breadcrumbs">Tamil Study Bible <span>/</span> Matthew</div><h1 id="pageTitle">Project overview</h1></div>
+      <div class="top-actions"><button class="ghost-btn" id="quickSearch">⌕ <span>Search</span><kbd>⌘K</kbd></button><button class="primary-btn" id="newImport">＋ Import content</button><div class="avatar">AM</div></div>
+    </header>
+
+    <section class="view active" id="view-overview">
+      <div class="hero-grid">
+        <div class="hero-card">
+          <div class="eyebrow">Matthew · Publishing QA</div>
+          <h2>Publication readiness</h2>
+          <div class="score-row"><div class="score-ring"><span>86%</span></div><div class="score-copy"><strong>Good progress</strong><p>Most structural checks have passed. Resolve 38 high-priority findings before final sign-off.</p><button class="text-btn" data-jump="qa">Review priority findings →</button></div></div>
+        </div>
+        <div class="safety-card"><div class="shield">◆</div><div><small>Scripture protection</small><strong>Human approval enforced</strong><p>AI and automated rules can flag Scripture, but cannot modify protected Scripture records.</p></div><span class="status-chip success">Active</span></div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-head"><span>Content units</span><i>▤</i></div><strong>6,982</strong><small>Across Matthew resources</small></div>
+        <div class="metric"><div class="metric-head"><span>Protected Scripture</span><i>◈</i></div><strong>1,071</strong><small>Tamil verse records</small></div>
+        <div class="metric"><div class="metric-head"><span>Open findings</span><i>!</i></div><strong>246</strong><small><b>38</b> high priority</small></div>
+        <div class="metric"><div class="metric-head"><span>Editorial rules</span><i>文</i></div><strong>184</strong><small>121 approved · 63 observed</small></div>
+      </div>
+
+      <div class="content-grid">
+        <div class="panel">
+          <div class="panel-head"><div><small>Project content</small><h3>Matthew resources</h3></div><button class="small-btn" data-jump="books">Open library</button></div>
+          <div class="resource-list">
+            <div class="resource-row"><span class="resource-icon scripture">B</span><div><strong>Scripture</strong><span>English + Tamil · 28 chapters</span></div><div class="progress"><i style="width:100%"></i></div><b>100%</b></div>
+            <div class="resource-row"><span class="resource-icon notes">N</span><div><strong>Study notes</strong><span>545 translated notes</span></div><div class="progress"><i style="width:84%"></i></div><b>84%</b></div>
+            <div class="resource-row"><span class="resource-icon refs">R</span><div><strong>Cross-references</strong><span>1,612 records</span></div><div class="progress"><i style="width:96%"></i></div><b>96%</b></div>
+            <div class="resource-row"><span class="resource-icon foot">F</span><div><strong>Footnotes</strong><span>147 corrected records</span></div><div class="progress"><i style="width:91%"></i></div><b>91%</b></div>
+            <div class="resource-row"><span class="resource-icon media">M</span><div><strong>Maps & charts</strong><span>11 resource documents</span></div><div class="progress"><i style="width:42%"></i></div><b>42%</b></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><small>Recent activity</small><h3>Editorial trail</h3></div><button class="icon-btn">•••</button></div>
+          <div class="activity-list">
+            <div class="activity"><span class="dot red"></span><div><strong>Number mismatch detected</strong><p>Matthew 10:29 · Footnote · 1/16 vs 1/64</p><time>12 min ago</time></div></div>
+            <div class="activity"><span class="dot amber"></span><div><strong>USFM marker sequence flagged</strong><p>Matthew 4:19 · Footnote</p><time>27 min ago</time></div></div>
+            <div class="activity"><span class="dot green"></span><div><strong>Cross-reference batch passed</strong><p>1,612 references structurally checked</p><time>1 hr ago</time></div></div>
+            <div class="activity"><span class="dot blue"></span><div><strong>Legacy DOC imported</strong><p>Study notes · local conversion adapter</p><time>Today</time></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-books">
+      <div class="workspace-toolbar">
+        <div class="segmented"><button class="active">Matthew</button><button>＋ Add book</button></div>
+        <div class="toolbar-actions"><select><option>Chapter 5</option><option>Chapter 1</option><option>Chapter 2</option></select><button class="small-btn">Filter content</button></div>
+      </div>
+      <div class="editor-layout">
+        <aside class="content-nav">
+          <div class="content-nav-head"><strong>Matthew 5</strong><span>72 content units</span></div>
+          <button class="content-item active"><i class="lock">◆</i><div><strong>5:1–2</strong><span>Scripture</span></div><em>✓</em></button>
+          <button class="content-item"><i class="note">N</i><div><strong>5:1–12</strong><span>Study note</span></div><em class="warn-dot">2</em></button>
+          <button class="content-item"><i class="head">H</i><div><strong>Sermon on the Mount</strong><span>Subheading</span></div><em>✓</em></button>
+          <button class="content-item"><i class="ref">R</i><div><strong>5:3</strong><span>Cross-references</span></div><em>✓</em></button>
+          <button class="content-item"><i class="note">N</i><div><strong>5:3</strong><span>Study note</span></div><em class="warn-dot">1</em></button>
+          <button class="content-item"><i class="lock">◆</i><div><strong>5:3</strong><span>Scripture</span></div><em>✓</em></button>
+          <button class="content-item"><i class="foot">F</i><div><strong>5:3</strong><span>Footnote</span></div><em>✓</em></button>
+        </aside>
+        <div class="editor-pane">
+          <div class="editor-head"><div><span class="status-chip protected">◆ Protected Scripture</span><h3>Matthew 5:1–2</h3><p>Canonical Scripture · Tamil target</p></div><div class="editor-actions"><button class="small-btn">History</button><button class="small-btn">Open issues <b>1</b></button></div></div>
+          <div class="parallel-editor">
+            <article><header><span>EN</span><div><strong>English source</strong><small>41MATGSB.SFM</small></div><button>•••</button></header><div class="text-block"><span class="verse-no">1</span> Seeing the crowds, he went up on the mountain, and when he sat down, his disciples came to him. <span class="verse-no">2</span> And he opened his mouth and taught them, saying:</div><footer>Source · Read-only</footer></article>
+            <article class="target"><header><span>த</span><div><strong>Tamil target</strong><small>41MATIRVTam.SFM</small></div><button>•••</button></header><div class="text-block tamil"><span class="verse-no">1</span> இயேசு மக்கள் கூட்டத்தைக் கண்டு மலையின்மேல் ஏறினார்; அவர் உட்கார்ந்தபோது, அவருடைய சீடர்கள் அவரிடத்தில் வந்தார்கள். <span class="verse-no">2</span> அப்பொழுது அவர் தமது வாயைத் திறந்து அவர்களுக்கு உபதேசித்துச் சொன்னார்:</div><footer><span>◆ Human approval required</span><button class="text-btn">Propose correction</button></footer></article>
+          </div>
+          <div class="issue-drawer">
+            <div class="issue-title"><span class="issue-severity low">LOW</span><div><strong>Structural comparison</strong><p>No protected Scripture change proposed.</p></div><button>×</button></div>
+            <div class="evidence-row"><span>Deterministic checks</span><b class="pass">Passed</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-import">
+      <div class="import-grid">
+        <div class="panel upload-panel">
+          <div class="upload-icon">⇩</div><h2>Import project content</h2><p>Drop one or more files here. The app analyzes structure and duplicates before anything enters the database.</p>
+          <div class="dropzone" id="dropzone"><strong>Drop files here</strong><span>or choose from your computer</span><button class="primary-btn" id="chooseFiles">Choose files</button><input type="file" id="filePicker" multiple accept=".usfm,.sfm,.csv,.tsv,.json,.doc,.docx"></div>
+          <div class="format-row"><span>USFM</span><span>SFM</span><span>CSV</span><span>TSV</span><span>JSON</span><span>DOC</span><span>DOCX</span></div>
+          <div class="legacy-note"><b>DOC support</b><p>Legacy Microsoft Word .doc files are recognized. In the current development build they are converted locally to a temporary DOCX for parsing; the original file is never modified.</p></div>
+        </div>
+        <div class="panel queue-panel"><div class="panel-head"><div><small>Import queue</small><h3>Ready to analyze</h3></div><span class="status-chip neutral">2 files</span></div>
+          <div class="file-card"><span class="file-type">DOC</span><div><strong>MAT Footnotes-corrected.doc</strong><span>Legacy Word · 1.2 MB</span></div><span class="status-chip success">Recognized</span></div>
+          <div class="file-card"><span class="file-type sfm">SFM</span><div><strong>41MATIRVTam.SFM</strong><span>Tamil Scripture · 302 KB</span></div><span class="status-chip success">Recognized</span></div>
+          <button class="primary-btn wide" id="analyzeBtn">Analyze 2 files</button>
+        </div>
+      </div>
+      <div class="panel import-preview hidden" id="importPreview"><div class="panel-head"><div><small>Preflight complete</small><h3>Import preview</h3></div><span class="status-chip success">No destructive action</span></div>
+        <div class="summary-strip"><div><span>Book</span><strong>Matthew</strong></div><div><span>New</span><strong>147</strong></div><div><span>Exact duplicates</span><strong>121</strong></div><div><span>Changed/conflicts</span><strong class="amber-text">26</strong></div><div><span>Warnings</span><strong>1</strong></div></div>
+        <table class="preview-table"><thead><tr><th>Resource</th><th>Detected structure</th><th>Existing overlap</th><th>Action</th></tr></thead><tbody><tr><td><b>Footnotes</b><span>DOC · Matthew</span></td><td>147 records</td><td>121 exact · 26 differ</td><td><select><option>Compare conflicts</option><option>Import only new</option><option>Create revision</option></select></td></tr><tr><td><b>Target Scripture</b><span>SFM · Tamil</span></td><td>28 chapters · 1,071 verses</td><td>Existing authoritative source</td><td><select><option>Keep authoritative Scripture</option><option>Compare only</option></select></td></tr></tbody></table>
+        <div class="commit-row"><p>Nothing will overwrite existing content silently.</p><button class="primary-btn">Commit safe import</button></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-qa">
+      <div class="qa-layout">
+        <aside class="filters panel"><div class="panel-head"><h3>Findings</h3><span>246</span></div><label class="searchbox">⌕ <input placeholder="Search issues"></label><div class="filter-group"><span>Severity</span><button class="filter active"><i class="sev critical"></i>Critical <b>3</b></button><button class="filter"><i class="sev high"></i>High <b>35</b></button><button class="filter"><i class="sev medium"></i>Medium <b>96</b></button><button class="filter"><i class="sev low"></i>Low <b>112</b></button></div><div class="filter-group"><span>Type</span><button class="filter">Semantic fidelity <b>41</b></button><button class="filter">USFM structure <b>19</b></button><button class="filter">Terminology <b>61</b></button><button class="filter">Unicode <b>14</b></button><button class="filter">References <b>7</b></button></div></aside>
+        <div class="issue-list panel"><div class="issue-list-head"><div><strong>Priority review</strong><span>Sorted by risk and confidence</span></div><select><option>Highest risk first</option></select></div>
+          <button class="qa-card active"><span class="sev-badge critical">CRITICAL</span><div><strong>Number mismatch</strong><p>Matthew 10:29 · Footnote</p><span>Source 1/16 · Target 1/64</span></div><em>99%</em></button>
+          <button class="qa-card"><span class="sev-badge high">HIGH</span><div><strong>USFM marker sequence</strong><p>Matthew 4:19 · Footnote</p><span>\ft → \fq marker order differs</span></div><em>100%</em></button>
+          <button class="qa-card"><span class="sev-badge high">HIGH</span><div><strong>Possible semantic shift</strong><p>Matthew introduction · paragraph 12</p><span>Source qualification may be stronger in target</span></div><em>92%</em></button>
+          <button class="qa-card"><span class="sev-badge medium">MEDIUM</span><div><strong>Terminology variation</strong><p>Matthew 5:17 · Study note</p><span>Rare variant against approved project term</span></div><em>88%</em></button>
+        </div>
+        <div class="review-panel panel"><div class="review-head"><div><span class="sev-badge critical">CRITICAL</span><h3>Number mismatch</h3><p>Footnote · Matthew 10:29</p></div><button class="icon-btn">•••</button></div>
+          <div class="evidence-box"><header><strong>Deterministic evidence</strong><span class="status-chip success">Confirmed</span></header><div class="compare-line"><div><small>English source</small><p>worth approximately <mark>1/16</mark> of a denarius</p></div><div><small>Tamil target</small><p>தெனாரியுவின் ஏறத்தாழ <mark>1/64</mark> மதிப்பு</p></div></div></div>
+          <div class="review-note"><strong>Why this was flagged</strong><p>A local number-comparison rule detected a value change. No AI was required for this finding.</p></div>
+          <div class="decision-box"><label>Editorial note<textarea placeholder="Add a reason or correction note…"></textarea></label><div class="decision-actions"><button class="danger-outline">Reject finding</button><button class="small-btn">Needs discussion</button><button class="primary-btn">Accept & edit</button></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-language">
+      <div class="language-hero"><div><span class="language-glyph">த</span><div><small>Target language profile</small><h2>Tamil</h2><p>Project-aware language intelligence built from the imported corpus and human editorial decisions.</p></div></div><button class="primary-btn">＋ Add editorial rule</button></div>
+      <div class="metric-grid"><div class="metric"><span>Observed vocabulary</span><strong>83,621</strong><small>Unique word forms</small></div><div class="metric"><span>Approved terms</span><strong>121</strong><small>Project-level rules</small></div><div class="metric"><span>Proper names</span><strong>428</strong><small>Candidate mappings</small></div><div class="metric"><span>Needs review</span><strong>63</strong><small>Observed suggestions</small></div></div>
+      <div class="content-grid"><div class="panel"><div class="panel-head"><div><small>Terminology</small><h3>Candidate consistency rules</h3></div><button class="small-btn">View all</button></div><table class="term-table"><thead><tr><th>Source term</th><th>Target forms</th><th>Evidence</th><th>Status</th></tr></thead><tbody><tr><td><b>covenant</b></td><td><span class="term-chip">உடன்படிக்கை</span></td><td>482 usages</td><td><span class="status-chip success">Approved</span></td></tr><tr><td><b>kingdom</b></td><td><span class="term-chip">ராஜ்யம்</span> <span class="term-chip muted-chip">variant × 7</span></td><td>1,106 usages</td><td><span class="status-chip warning">Review</span></td></tr><tr><td><b>righteousness</b></td><td><span class="term-chip">நீதி</span></td><td>76 usages</td><td><span class="status-chip neutral">Observed</span></td></tr></tbody></table></div><div class="panel"><div class="panel-head"><div><small>Rule hierarchy</small><h3>Where decisions live</h3></div></div><div class="rule-stack"><div><span>1</span><p><strong>Tamil language</strong><small>General grammar, Unicode, punctuation</small></p><em>Inherited</em></div><div><span>2</span><p><strong>Publisher profile</strong><small>Bible names, house style</small></p><em>Inherited</em></div><div class="active"><span>3</span><p><strong>Tamil Study Bible</strong><small>Project-specific terminology and exceptions</small></p><em>Highest priority</em></div></div></div></div>
+    </section>
+
+    <section class="view" id="view-publish">
+      <div class="publish-hero"><div><small>Approved database</small><h2>Publish once, output everywhere</h2><p>Exports are generated from the canonical project database—not from the original imported files.</p></div><span class="status-chip warning">38 high-priority issues remain</span></div>
+      <div class="export-grid"><button class="export-card"><span>USFM</span><div><strong>USFM / SFM</strong><p>Structured Bible and Study Bible interchange</p></div><em>→</em></button><button class="export-card"><span>CSV</span><div><strong>CSV</strong><p>Tabular editorial review and interchange</p></div><em>→</em></button><button class="export-card"><span>TSV</span><div><strong>TSV</strong><p>Safe multilingual tab-delimited export</p></div><em>→</em></button><button class="export-card"><span>JSON</span><div><strong>JSON</strong><p>Canonical structured project data</p></div><em>→</em></button><button class="export-card"><span>DOCX</span><div><strong>DOCX</strong><p>Editorial and publishing handoff</p></div><em>→</em></button><button class="export-card disabled"><span>PDF</span><div><strong>Print PDF</strong><p>Planned after layout engine validation</p></div><em>Later</em></button></div>
+      <div class="panel publication-gate"><div class="panel-head"><div><small>Publication gate</small><h3>Preflight checklist</h3></div><strong>5 / 8 passed</strong></div><div class="gate-row pass"><span>✓</span><div><strong>Structural validation</strong><p>All required book/chapter anchors present</p></div><em>Passed</em></div><div class="gate-row pass"><span>✓</span><div><strong>Scripture protection</strong><p>No unapproved Scripture edits</p></div><em>Passed</em></div><div class="gate-row pass"><span>✓</span><div><strong>Cross-reference validation</strong><p>Reference syntax and ranges checked</p></div><em>Passed</em></div><div class="gate-row warn"><span>!</span><div><strong>High-priority QA</strong><p>38 findings still need editorial decisions</p></div><em>Required</em></div><div class="gate-row warn"><span>!</span><div><strong>Maps & charts</strong><p>Asset-link validation incomplete</p></div><em>Required</em></div></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="searchModal"><div class="search-modal"><div class="modal-search">⌕ <input autofocus placeholder="Search books, verses, notes, issues, terms…"><kbd>ESC</kbd></div><div class="search-hints"><span>Quick actions</span><button data-jump="import">⇩ Import content <kbd>I</kbd></button><button data-jump="qa">✓ Review priority issues <kbd>Q</kbd></button><button data-jump="language">文 Open language profile <kbd>L</kbd></button></div></div></div>
+<div class="toast" id="toast">Action completed</div>
+<script src="app.js"></script>
+</body>
+</html>
