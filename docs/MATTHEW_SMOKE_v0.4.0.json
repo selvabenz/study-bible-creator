@@ -1,0 +1,93 @@
+{
+  "authoritySummary": [
+    {
+      "incoming_resource_role": "cross_references",
+      "authority_recommendation": "use_incoming",
+      "count": 245
+    },
+    {
+      "incoming_resource_role": "footnotes",
+      "authority_recommendation": "use_incoming",
+      "count": 23
+    }
+  ],
+  "pendingConflicts": 268,
+  "sourceVerses": 1067,
+  "targetVerses": 1071,
+  "pairedScripture": 1067,
+  "targetOnlyScripture": [
+    "MAT 12:47",
+    "MAT 17:21",
+    "MAT 18:11",
+    "MAT 23:14"
+  ],
+  "corrections": [
+    {
+      "name": "MAT Cross-references-recorrected.docx",
+      "items": 3224,
+      "source": 1612,
+      "target": 1612
+    },
+    {
+      "name": "MAT Footnotes-corrected.docx",
+      "items": 294,
+      "source": 147,
+      "target": 147
+    },
+    {
+      "name": "MAT Introductions ,ESV Study Bible, Glossary, Back Matter-corrected.docx",
+      "items": 122,
+      "source": 61,
+      "target": 61
+    },
+    {
+      "name": "MAT Study notes, sub-headings, chapter intros-correction.docx",
+      "items": 3470,
+      "source": 1735,
+      "target": 1735
+    }
+  ],
+  "legacyComparisons": [
+    {
+      "name": "MAT Cross-references-recorrected.doc",
+      "docItems": 3224,
+      "docxItems": 3224
+    },
+    {
+      "name": "MAT Footnotes-corrected.doc",
+      "docItems": 294,
+      "docxItems": 294
+    },
+    {
+      "name": "MAT Introductions ,ESV Study Bible, Glossary, Back Matter-corrected.doc",
+      "docItems": 122,
+      "docxItems": 122
+    },
+    {
+      "name": "MAT Study notes, sub-headings, chapter intros-correction.doc",
+      "docItems": 3470,
+      "docxItems": 3470
+    }
+  ],
+  "mapDocs": 11,
+  "dbItems": 10489,
+  "protected": 3250,
+  "qa": {
+    "engine": "local-deterministic-v0.4",
+    "created": 53,
+    "open": 53,
+    "bySeverity": {
+      "critical": 0,
+      "high": 22,
+      "medium": 27,
+      "low": 0,
+      "info": 4
+    },
+    "byCategory": {
+      "number_mismatch": 3,
+      "usfm_marker_sequence_mismatch": 27,
+      "usfm_marker_spacing": 19,
+      "versification_difference": 4
+    }
+  }
+}

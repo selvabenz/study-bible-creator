@@ -1,0 +1,108 @@
+name: Versioned Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to package, e.g. v0.4.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      has_tauri: ${{ steps.tauri.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify tag/version/changelog agreement
+        run: npm run release:check
+      - name: Run complete regression suite
+        run: npm test
+      - id: tauri
+        shell: bash
+        run: |
+          if [ -f src-tauri/Cargo.toml ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+
+  source-release:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - name: Generate release notes from CHANGELOG
+        run: node scripts/release-notes.mjs release-notes.md
+      - name: Package source snapshot
+        run: |
+          mkdir -p release
+          zip -r "release/study-bible-creator-${RELEASE_TAG}-source.zip" . \
+            -x '.git/*' 'release/*' 'data/*' 'tmp/*' 'node_modules/*'
+          sha256sum release/* > release/SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Study Bible Creator ${{ env.RELEASE_TAG }}
+          body_path: release-notes.md
+          prerelease: true
+          files: |
+            release/*.zip
+            release/SHA256SUMS.txt
+
+  desktop:
+    needs: [validate, source-release]
+    if: needs.validate.outputs.has_tauri == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            label: windows
+          - platform: macos-latest
+            label: macos
+          - platform: ubuntu-22.04
+            label: linux
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Linux desktop dependencies
+        if: matrix.label == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: Study Bible Creator ${{ env.RELEASE_TAG }}
+          releaseDraft: false
+          prerelease: true

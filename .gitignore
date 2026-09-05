@@ -50,3 +50,8 @@ Thumbs.db
 
 # Test artifacts
 .test-output/
+*.exe
+*.msix
+*.pkg
+*.rpm
+*.tar.gz

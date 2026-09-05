@@ -87,11 +87,14 @@ CREATE TABLE IF NOT EXISTS content_items (
   sequence_no INTEGER NOT NULL DEFAULT 0,
   parent_item_id TEXT REFERENCES content_items(id) ON DELETE CASCADE,
   semantic_key TEXT NOT NULL,
+  match_key TEXT NOT NULL DEFAULT '',
+  parent_semantic_key TEXT,
   logical_key TEXT NOT NULL,
   language_code TEXT,
   language_role TEXT CHECK(language_role IN ('source','target','auxiliary') OR language_role IS NULL),
   protection_level TEXT NOT NULL DEFAULT 'normal' CHECK(protection_level IN ('normal','protected_scripture')),
   review_status TEXT NOT NULL DEFAULT 'unreviewed' CHECK(review_status IN ('unreviewed','reviewed','approved','needs_review')),
+  canonical_state TEXT NOT NULL DEFAULT 'active' CHECK(canonical_state IN ('active','superseded','alternate')),
   current_text TEXT NOT NULL DEFAULT '',
   raw_text TEXT NOT NULL DEFAULT '',
   normalized_text TEXT NOT NULL DEFAULT '',
@@ -104,6 +107,7 @@ CREATE TABLE IF NOT EXISTS content_items (
 CREATE INDEX IF NOT EXISTS idx_content_project_book_ref ON content_items(project_id, book_code, chapter, verse);
 CREATE INDEX IF NOT EXISTS idx_content_logical_key ON content_items(project_id, logical_key);
 CREATE INDEX IF NOT EXISTS idx_content_semantic ON content_items(project_id, semantic_key, language_role, language_code);
+CREATE INDEX IF NOT EXISTS idx_content_match ON content_items(project_id, match_key, language_code, canonical_state);
 CREATE INDEX IF NOT EXISTS idx_content_type ON content_items(project_id, content_type);
 
 CREATE TABLE IF NOT EXISTS import_conflicts (
@@ -112,17 +116,39 @@ CREATE TABLE IF NOT EXISTS import_conflicts (
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   existing_content_item_id TEXT NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
   semantic_key TEXT NOT NULL,
+  match_key TEXT NOT NULL DEFAULT '',
   language_code TEXT,
   language_role TEXT,
+  existing_resource_role TEXT,
+  incoming_resource_role TEXT,
+  incoming_file_id TEXT REFERENCES import_files(id),
+  incoming_resource_id TEXT REFERENCES resources(id),
   incoming_text TEXT NOT NULL,
   incoming_raw_text TEXT NOT NULL DEFAULT '',
   incoming_hash TEXT NOT NULL,
+  incoming_marker TEXT,
+  incoming_category TEXT,
   source_locator TEXT,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','keep_existing','use_incoming','resolved')),
+  authority_recommendation TEXT NOT NULL DEFAULT 'manual_review',
+  authority_reason TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','keep_existing','use_incoming','manual_merge','resolved')),
+  resolution_reason TEXT,
+  resolved_by TEXT,
   created_at TEXT NOT NULL,
   resolved_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_import_conflicts_project ON import_conflicts(project_id,status);
+
+CREATE TABLE IF NOT EXISTS authority_rules (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  content_type TEXT NOT NULL,
+  resource_role TEXT NOT NULL,
+  priority INTEGER NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(project_id,content_type,resource_role)
+);
 
 CREATE TABLE IF NOT EXISTS content_versions (
   id TEXT PRIMARY KEY,

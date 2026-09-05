@@ -1,65 +1,21 @@
-name: Desktop Release (Tauri)
+name: Desktop Packaging Smoke Test
 
-# Prepared for Milestone M2. Until a Tauri shell exists, this workflow reports
-# that the desktop build is not ready rather than failing the repository.
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'desktop-v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  detect-tauri:
+  detect:
     runs-on: ubuntu-latest
-    outputs:
-      exists: ${{ steps.check.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
-      - id: check
+      - name: Desktop shell status
         shell: bash
         run: |
           if [ -f src-tauri/Cargo.toml ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tauri shell is present. Versioned installers are produced by release.yml on v* tags."
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Tauri desktop shell has not been scaffolded yet; desktop packaging begins in Milestone M2."
+            echo "Tauri shell is not present yet. Executable packaging starts at Milestone M2."
           fi
-
-  build:
-    needs: detect-tauri
-    if: needs.detect-tauri.outputs.exists == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-            label: windows
-          - platform: macos-latest
-            label: macos
-          - platform: ubuntu-22.04
-            label: linux
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Linux system dependencies
-        if: matrix.label == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
-      - run: npm ci
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Study Bible Creator ${{ github.ref_name }}
-          releaseDraft: true
-          prerelease: true

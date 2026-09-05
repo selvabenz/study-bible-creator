@@ -1,80 +1,66 @@
-# Study Bible Creator v0.3.0
+# Study Bible Creator v0.4.0
 
-Local-first, database-first Study Bible publishing QA application under active development.
+A local-first, multilingual Study Bible editorial database and publishing-QA application. Version 0.4.0 hardens import/export round-tripping, duplicate/conflict handling, authority rules, human revision safety, and deterministic QA before the Tauri desktop shell is introduced.
 
 ## Product principles
-- **SQLite is the source of truth.** Imported files are source material, not the live project database.
-- **Deterministic/local checks first.** AI is not used in v0.3 and will be added later only for difficult language/semantic cases.
-- **Scripture is protected.** Automated processes may flag Scripture but cannot silently overwrite it.
-- **Import is preview-first and duplicate-aware.** Exact files, exact records and changed logical records are distinguished before commit.
-- **Worldwide language architecture.** Unicode, LTR/RTL metadata, language codes and self-building editorial profiles are first-class concepts.
+- **Database is the source of truth.** Imported files are provenance/input, not the live project database.
+- **Local algorithms first.** AI is reserved for difficult linguistic/semantic work later.
+- **Scripture is protected.** Software and AI may flag or suggest, but Scripture cannot be replaced without explicit human approval.
+- **No silent overwrite.** Conflicting imports are persisted and resolved through an auditable human workflow.
+- **Worldwide language architecture.** Unicode, LTR/RTL project metadata, language codes, and self-building editorial profiles are first-class.
 
-## What is new in v0.3
-- The high-fidelity UX is now the **real development application UI**, not only a standalone wireframe.
-- Source and target content are paired using stable semantic keys.
-- Bilingual DOC/DOCX tables correctly store English rows as source and Tamil rows as target.
-- Changed imports are persisted as review conflicts instead of being discarded or overwriting existing content.
-- A first deterministic publishing QA engine now runs locally.
-- Numeric comparison normalizes Unicode digits, reference spacing, dash variants and reference ranges to reduce false positives.
-- Matthew versification differences are classified as informational review items rather than automatic translation errors.
-- Project browser, book/chapter content workspace, import preflight, QA review, language vocabulary and export screens are connected to the real SQLite database.
-
-## Current import support
+## Supported import formats
 - USFM / SFM
 - CSV
 - TSV
 - JSON
 - DOCX
-- Legacy Microsoft Word DOC
+- Legacy Microsoft Word DOC (safe local temporary conversion; original unchanged)
 
-### Legacy DOC
-The development adapter verifies the Microsoft Compound Binary signature and performs a **local temporary LibreOffice conversion to DOCX**, then uses the same semantic parser as native DOCX. The original DOC is never modified.
+## Supported v0.4 exports
+- USFM / SFM
+- CSV
+- TSV
+- JSON
+- DOCX bilingual editorial exchange
 
-If LibreOffice is not present, DOC is still recognized and the app returns a clear converter-availability error rather than risking multilingual text corruption.
+> Legacy `.DOC` is import-only by design. Its safe round-trip path is `DOC → canonical database → DOCX`; the product requirements do not call for generating the obsolete binary DOC format.
 
-Optional override:
+## Conflict & authority model
+The database stores a canonical match identity independent of file names. Project authority rules make **recommendations**, not automatic editorial decisions.
 
-```text
-SBC_LIBREOFFICE=/path/to/soffice
-```
+Default examples:
+- corrected standalone `footnotes` > footnotes embedded in Scripture files
+- corrected standalone `cross_references` > cross-references embedded in Scripture files
+- Scripture changes always require explicit human confirmation regardless of priority
 
-## Current local QA checks
-- protected Scripture detection
-- source/target numeric mismatch comparison
-- Unicode zero-width characters
+The Conflict Review screen offers:
+- Keep existing
+- Use incoming
+- Manual merge
+
+Accepted changes create a `content_versions` history entry. Protected Scripture additionally requires a human confirmation checkbox and written reason.
+
+## Deterministic QA v0.4
+No AI is used. Current local checks include:
+- zero-width Unicode
 - NFC normalization
+- Unicode replacement character
+- invalid control characters
 - malformed USFM marker spacing
-- source/target Scripture presence differences / versification review
-- pending changed-import conflicts
+- unbalanced `\\f … \\f*` / `\\x … \\x*`
+- source/target number differences
+- source/target inline marker-sequence differences in bilingual editorial resources
+- empty target fields where source content exists
+- invalid chapter anchors for the 66-book canon
+- versification differences reported as informational review items
+- same-role canonical duplicates
 
-No AI is used by these checks.
-
-## Real Matthew corpus test
-The v0.3 smoke test verified the supplied project corpus:
-- English `41MATGSB.SFM`: 1,067 Scripture verse records
-- Tamil `41MATIRVTam.SFM`: 1,071 Scripture verse records
-- 1,067 Scripture pairs linked
-- 4 target-only verses classified as versification differences: Matthew 12:47; 17:21; 18:11; 23:14
-- Cross-reference DOCX: 1,612 source + 1,612 target rows
-- Footnote DOCX: 147 source + 147 target rows
-- Introduction/back-matter DOCX: 61 source + 61 target rows
-- Study-note/heading DOCX: 1,735 source + 1,735 target rows
-- All 4 legacy DOC files matched their converted DOCX semantic content counts
-- 11 supplied map/chart DOCX files parsed without crashing
-
-See `docs/TEST_REPORT_v0.3.0.md`.
-
-## Run in development mode
+## Run locally
 Requires Node.js 22.5+.
 
 ### Windows
-Double-click:
-
-```text
-run-dev.cmd
-```
-
-or PowerShell:
+Double-click `run-dev.cmd`, or:
 
 ```powershell
 ./run-dev.ps1
@@ -86,52 +72,62 @@ or PowerShell:
 ./run-dev.sh
 ```
 
-Open:
+Then open `http://127.0.0.1:4173`.
 
-```text
-http://127.0.0.1:4173
-```
-
-## Automated tests
+## Tests
 
 ```bash
 npm test
 ```
 
-## Optional real Matthew smoke test
-The corpus files are intentionally **not included in the repository**. Set local paths:
+Real Matthew smoke tests (optional development corpus):
 
 ```bash
 SBC_MAT_SOURCE=/path/41MATGSB.SFM \
 SBC_MAT_TARGET=/path/41MATIRVTam.SFM \
-SBC_MAT_CORRECTIONS_DIR=/path/corrected-docx \
-SBC_MAT_LEGACY_DOC_DIR=/path/original-doc \
-SBC_MAT_MAPS_DIR=/path/maps-docx \
+SBC_MAT_CORRECTIONS_DIR=/path/mat_converted \
+SBC_MAT_LEGACY_DOC_DIR=/path/mat_doc_original \
+SBC_MAT_MAPS_DIR=/path/matthew_maps_charts_docx \
 npm run qa:smoke
 ```
 
-## Export status
-Currently implemented:
-- USFM/SFM development export
-- CSV
-- TSV
-- JSON
+Full round-trip corpus test:
 
-Required later milestones:
-- DOCX editorial export
-- print-ready PDF
-- EPUB/web/mobile publishing outputs
+```bash
+SBC_MAT_SOURCE=/path/41MATGSB.SFM \
+SBC_MAT_TARGET=/path/41MATIRVTam.SFM \
+SBC_MAT_CORRECTIONS_DIR=/path/mat_converted \
+SBC_MAT_LEGACY_DOC_DIR=/path/mat_doc_original \
+node scripts/roundtrip-matthew-v0.4.mjs
+```
 
-## GitHub / CI
-- `.gitignore` protects databases, imported content, temporary conversions, secrets and build artifacts.
-- CI runs deterministic tests on Windows, macOS and Linux.
-- source snapshot packaging workflow is included.
-- Tauri desktop release workflow is prepared for M2 and activates once `src-tauri/Cargo.toml` exists.
+## GitHub versioning and releases
+Normal pushes to `main` run cross-platform CI. **Formal releases are created from version tags.**
 
-See `docs/GIT_WORKFLOW.md` and `.github/workflows/`.
+For v0.4.0:
 
-## Roadmap
-See `docs/MILESTONES.md`.
+```bash
+git push origin main
+git tag v0.4.0
+git push origin v0.4.0
+```
 
-## Production desktop direction
-M2 moves the proven local core into a **Tauri 2** shell with a Rust backend and React/TypeScript UI for Windows, macOS and Linux installers. v0.3 deliberately proves the data/import/QA behavior before that migration.
+The tag triggers `.github/workflows/release.yml`, which:
+1. verifies the Git tag equals the `package.json` version;
+2. verifies a matching CHANGELOG section exists;
+3. runs the regression suite;
+4. generates release notes from CHANGELOG;
+5. creates a GitHub Release;
+6. attaches a versioned source ZIP and SHA-256 checksum;
+7. **when `src-tauri/Cargo.toml` exists**, also builds/attaches desktop installers for Windows, macOS, and Linux.
+
+### Executables today
+v0.4.0 intentionally precedes the Tauri desktop-shell milestone. Therefore v0.4.0 tag releases source/development artifacts, not a Windows EXE yet. At Milestone M2, the same release pipeline will begin producing executable installers automatically.
+
+## Documentation
+- `docs/MILESTONES.md`
+- `docs/TEST_REPORT_v0.4.0.md`
+- `docs/COMMIT_v0.4.0.md`
+- `docs/RELEASE_PROCESS.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DATA_MODEL.md`

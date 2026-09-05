@@ -30,7 +30,7 @@ function contentDisposition(name){return `attachment; filename="${String(name).r
 const server=http.createServer(async(req,res)=>{
   try{
     const url=new URL(req.url,'http://localhost');
-    if(url.pathname==='/api/health') return send(res,200,{ok:true,version:'0.3.0',localFirst:true,aiEnabled:false});
+    if(url.pathname==='/api/health') return send(res,200,{ok:true,version:'0.4.0',localFirst:true,aiEnabled:false});
     if(url.pathname==='/api/projects'&&req.method==='GET') return send(res,200,store.listProjects());
     if(url.pathname==='/api/projects'&&req.method==='POST') return send(res,201,store.createProject(jsonBody(await body(req))));
 
@@ -56,6 +56,8 @@ const server=http.createServer(async(req,res)=>{
     }));
     const conflictMatch=url.pathname.match(/^\/api\/projects\/([^/]+)\/conflicts$/);
     if(conflictMatch&&req.method==='GET') return send(res,200,store.listConflicts(conflictMatch[1],url.searchParams.get('status')||'pending'));
+    const conflictResolve=url.pathname.match(/^\/api\/projects\/([^/]+)\/conflicts\/([^/]+)\/resolve$/);
+    if(conflictResolve&&req.method==='POST') return send(res,200,store.resolveConflict(conflictResolve[1],conflictResolve[2],jsonBody(await body(req))));
     const vocabMatch=url.pathname.match(/^\/api\/projects\/([^/]+)\/vocabulary$/);
     if(vocabMatch&&req.method==='GET'){
       const project=store.getProject(vocabMatch[1]); if(!project)return send(res,404,{error:'Project not found'});
@@ -64,6 +66,8 @@ const server=http.createServer(async(req,res)=>{
     }
     const rulesMatch=url.pathname.match(/^\/api\/projects\/([^/]+)\/rules$/);
     if(rulesMatch&&req.method==='GET') return send(res,200,{rules:store.listRules(rulesMatch[1]),glossary:store.listGlossary(rulesMatch[1])});
+    const authorityMatch=url.pathname.match(/^\/api\/projects\/([^/]+)\/authority-rules$/);
+    if(authorityMatch&&req.method==='GET') return send(res,200,{rules:store.listAuthorityRules(authorityMatch[1])});
 
     const qaRunMatch=url.pathname.match(/^\/api\/projects\/([^/]+)\/qa\/run$/);
     if(qaRunMatch&&req.method==='POST') return send(res,200,runLocalQa(store,qaRunMatch[1]));
@@ -77,12 +81,12 @@ const server=http.createServer(async(req,res)=>{
     const exportMatch=url.pathname.match(/^\/api\/projects\/([^/]+)\/export$/);
     if(exportMatch&&req.method==='GET'){
       const format=(url.searchParams.get('format')||'json').toLowerCase();
-      if(!['json','csv','tsv','usfm','sfm'].includes(format)) return send(res,400,{error:`Export ${format.toUpperCase()} is not implemented in v0.3 yet.`});
+      if(!['json','csv','tsv','usfm','sfm','docx'].includes(format)) return send(res,400,{error:`Export ${format.toUpperCase()} is not implemented in v0.4.`});
       const rows=store.exportRows(exportMatch[1],{bookCode:url.searchParams.get('book')||null,languageCode:url.searchParams.get('language')||null,resourceRole:url.searchParams.get('resourceRole')||null});
       const ext=format==='usfm'?'usfm':format;
       const temp=path.join(os.tmpdir(),`study-bible-export-${Date.now()}.${ext}`);
       exportItems(rows,format,temp); const data=fs.readFileSync(temp); fs.rmSync(temp,{force:true});
-      const ct=format==='json'?'application/json; charset=utf-8':format==='csv'?'text/csv; charset=utf-8':format==='tsv'?'text/tab-separated-values; charset=utf-8':'text/plain; charset=utf-8';
+      const ct=format==='json'?'application/json; charset=utf-8':format==='csv'?'text/csv; charset=utf-8':format==='tsv'?'text/tab-separated-values; charset=utf-8':format==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'text/plain; charset=utf-8';
       return send(res,200,data,ct,{'content-disposition':contentDisposition(`study-bible-export.${ext}`)});
     }
 
@@ -126,4 +130,4 @@ const server=http.createServer(async(req,res)=>{
 });
 
 const PORT=process.env.PORT||4173;
-server.listen(PORT,'127.0.0.1',()=>console.log(`Study Bible Creator v0.3.0: http://127.0.0.1:${PORT}`));
+server.listen(PORT,'127.0.0.1',()=>console.log(`Study Bible Creator v0.4.0: http://127.0.0.1:${PORT}`));

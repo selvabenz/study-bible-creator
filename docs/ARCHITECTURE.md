@@ -1,40 +1,102 @@
-# Study Bible Creator — V0.1 Architecture
+# Study Bible Creator — Architecture (v0.4.0)
 
-## Product principle
-Local-first, database-first, human-authoritative. Files are import/export containers; the project database is the source of truth.
+## Product principles
+Study Bible Creator is **local-first, database-first, multilingual, deterministic-first and human-authoritative for Scripture**. Imported files are transport containers; SQLite is the working source of truth.
 
-## Production target
+## Current development architecture
+v0.4.0 is a dependency-light Node 22 reference application used to prove the canonical model, import/round-trip behavior, conflict safety and deterministic QA before the Tauri/Rust migration.
+
+```text
+Desktop/web development UI
+        │
+        ▼
+Local application server
+        │
+        ├── Import preflight
+        ├── Canonical parsers
+        ├── Authority/conflict engine
+        ├── Deterministic QA
+        ├── Human resolution workflow
+        └── Exporters
+        │
+        ▼
+SQLite project database
+```
+
+## Production target (M2)
 - Desktop shell: Tauri 2
 - UI: React + TypeScript
 - Core: Rust
-- Local DB: SQLite
-- AI: optional escalation layer only after deterministic QA
+- Local database: SQLite
+- AI: optional escalation layer only after deterministic/local QA
 
-This v0.1 repository provides a dependency-free Node 22 reference implementation of the local core and UI so the data model/import behavior can be exercised immediately. The same interfaces are intended to be ported into the Tauri/Rust core.
+The v0.4 interfaces and tests are the behavioral contract to preserve during the Rust/Tauri port.
 
 ## Import pipeline
-File -> fingerprint -> parser -> semantic items -> duplicate comparison -> preview -> human commit -> SQLite.
+
+```text
+File(s)
+  → format/signature detection
+  → SHA-256 file fingerprint
+  → parser
+  → canonical semantic items
+  → same-resource duplicate check
+  → authority-aware cross-resource match
+  → preview
+  → human commit
+  → SQLite
+```
+
+Supported import transports: USFM/SFM, CSV, TSV, JSON, DOCX and legacy DOC.
+
+### Legacy DOC boundary
+Legacy `.doc` is an input transport only. The current development adapter validates the OLE/Compound Binary signature, performs a local temporary LibreOffice conversion to DOCX, parses it through the same Word semantic importer, then removes the temporary conversion. The source DOC is never modified. This adapter is intentionally replaceable in the Tauri production build.
+
+## Canonical identity
+Each content item has two complementary identities:
+- `semantic_key`: precise identity inside its resource/marker context;
+- `match_key`: marker-independent identity used for safe source/target pairing and authority comparisons.
+
+The importer never assumes English line order equals target-language line order.
+
+## Authority and conflict model
+Authority rules are project data, not hard-coded editing behavior. The default Matthew policy treats:
+- fresh source/target Scripture resources as authoritative for Scripture;
+- corrected standalone footnote/cross-reference resources as higher authority than ancillary copies embedded in the Scripture SFM;
+- protected Scripture differences as manual review regardless of authority score.
+
+A changed overlapping record produces an `import_conflict`. It does **not** overwrite existing content. Human actions are:
+- keep existing;
+- use incoming;
+- manual merge.
+
+All change actions require an editorial reason. Protected Scripture additionally requires explicit protected-content confirmation. Replaced text is written to version history before the active record changes.
 
 ## Scripture protection
-`content_items.protection_level = protected_scripture` is assigned to verse text. Future write commands must reject automated edits to protected Scripture and require a human-approved revision path.
+`content_items.protection_level = protected_scripture` is an application-level authorization boundary. Deterministic QA and future AI may read, flag and suggest; they cannot silently update Scripture.
 
-## Duplicate strategy
-1. File SHA-256 detects byte-identical reimports.
-2. Logical keys detect existing semantic records.
-3. Content SHA-256 distinguishes exact duplicate content from changed records.
-4. V0.1 never overwrites changed records during import; it preserves them for a future compare/merge workflow.
+## Round-trip exchange
+The canonical database can export/import:
+- JSON (`sbc-0.4` canonical schema)
+- CSV
+- TSV
+- USFM/SFM
+- DOCX editorial exchange
 
-## Formats
-V0.1 import: USFM/SFM, CSV, TSV, JSON, DOCX.
-V0.1 export core: USFM/SFM, CSV, TSV, JSON. DOCX export is scheduled for the next milestone because it requires a carefully tested publishing schema rather than a lossy plain-text document.
+DOCX uses explicit bilingual/source-target columns and preserves Unicode plus explicit line breaks. Legacy DOC remains import-only.
 
-## Legacy DOC adapter
-Legacy `.doc` is treated as an input transport format, never as the canonical project representation. The current development adapter:
-1. validates the OLE/Compound Binary DOC signature;
-2. locates a local LibreOffice/soffice executable;
-3. converts the DOC to a temporary DOCX without changing the source file;
-4. parses the temporary DOCX through the normal Word semantic importer;
-5. deletes temporary conversion files;
-6. stores provenance indicating that the original format was DOC.
+## Deterministic QA before AI
+v0.4 includes local checks for:
+- malformed USFM marker spacing;
+- marker balance and selected source/target marker-sequence differences;
+- Unicode NFC, zero-width, invalid control and replacement characters;
+- chapter anchors;
+- numeric/fraction mismatches;
+- empty target content in paired editorial resources;
+- duplicate semantic records;
+- versification differences.
 
-This boundary is deliberately replaceable. The Tauri production line may substitute a smaller native converter/parser without changing import APIs or database semantics.
+Conflict resolution and QA are separate: pending import conflicts block publication but are not duplicated as QA findings.
+
+## Release architecture
+A normal branch push runs CI. A version tag such as `v0.4.0` is the release boundary. The release workflow validates tag/package/changelog agreement, runs tests, generates release notes from the changelog, creates a source archive and checksums, and publishes a GitHub Release. Once `src-tauri/Cargo.toml` exists at M2, the same release workflow also builds and attaches Windows, macOS and Linux installers.

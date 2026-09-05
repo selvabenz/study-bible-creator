@@ -1,8 +1,4 @@
-# Changelog
-
-All notable development changes to Study Bible Creator are recorded here.
-
-## [0.4.0] - 2026-09-05
+# Study Bible Creator v0.4.0
 
 ### Import & conflict resolution hardening
 - Added canonical `match_key` identities for safe cross-resource overlap detection without flattening resource provenance.
@@ -54,18 +50,3 @@ All notable development changes to Study Bible Creator are recorded here.
 - All four legacy Matthew DOC files match their DOCX equivalents semantically.
 - 11/11 Matthew map/chart DOCX files parse successfully.
 - DOCX visual rendering was inspected with Tamil text and preserved line breaks.
-
-## [0.3.0] - 2026-09-05
-
-- Connected the real local SQLite database to the development UI.
-- Added source/target semantic pairing, persistent import conflicts, deterministic QA, project content browsing, language vocabulary observations, and canonical export foundations.
-- Tested with authoritative Matthew English/Tamil Scripture and the correction corpus.
-
-## [0.2.0] - 2026-09-05
-
-- Added legacy DOC recognition through a local conversion adapter.
-- Added the high-fidelity interactive UX wireframe, cross-platform CI, development launchers, milestones, and Git workflow documentation.
-
-## [0.1.0] - 2026-09-05
-
-- Initial local-first Study Bible Creator prototype with SQLite, basic import/export, protected Scripture, duplicate detection, and project creation.

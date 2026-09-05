@@ -5,13 +5,14 @@ import { decodeXml, normalizeText, sha256 } from './utils.mjs';
 
 function textFromXml(xml) {
   const parts=[];
-  const re=/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:tab\s*\/\s*>|<w:br\s*\/\s*>/g;
+  const re=/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|(<w:tab\s*\/\s*>)|(<w:br\s*\/\s*>)/g;
   let m;
   while((m=re.exec(xml))) {
     if (m[1] != null) parts.push(decodeXml(m[1]));
-    else parts.push(' ');
+    else if (m[2]) parts.push('\t');
+    else if (m[3]) parts.push('\n');
   }
-  return normalizeText(parts.join(''));
+  return parts.join('').normalize('NFC').replace(/[\u200B\u200C\u200D\uFEFF]/g,'').replace(/[ \r]+/g,' ').replace(/ *\n */g,'\n').trim();
 }
 
 function readZipEntry(filePath, entryName) {
@@ -34,7 +35,7 @@ function readZipEntry(filePath, entryName) {
 }
 
 function cleanCell(value) {
-  const s = normalizeText(value ?? '');
+  const s = String(value ?? '').normalize('NFC').replace(/[\u200B\u200C\u200D\uFEFF]/g,'').replace(/[ \r]+/g,' ').replace(/ *\n */g,'\n').trim();
   return /^(?:NA|N\/A)$/i.test(s) ? '' : s;
 }
 
@@ -91,7 +92,8 @@ export function parseDocx(filePath) {
   if (knownHeader>=0) {
     const header=rows[knownHeader];
     const idx = name => header.findIndex(h=>h.toLowerCase()===name.toLowerCase());
-    const iNo=idx('No'), iTags=idx('Tags'), iCh=idx('Ch'), iVs=idx('Vs'), iSub=idx('Sub-Tags'), iEn=idx('English'), iTr=idx('Translation');
+    const iNo=idx('No'), iSem=idx('Semantic Key'), iTags=idx('Tags'), iCh=idx('Ch'), iVs=idx('Vs'), iSub=idx('Sub-Tags'), iType=idx('Content Type'), iProtect=idx('Protection'), iEn=idx('English'), iTr=idx('Translation');
+    const matchCounters=new Map();
     for (let r=knownHeader+1; r<rows.length; r++) {
       const row=rows[r];
       if(!row.some(Boolean)) continue;
@@ -101,16 +103,19 @@ export function parseDocx(filePath) {
       const rawVs=cleanCell(row[iVs]??'');
       const vs=rawVs || null;
       const sub=cleanCell(row[iSub]??'');
-      const type=classify(tag,sub);
+      const inferredType=classify(tag,sub);
+      const type=cleanCell(iType>=0?row[iType]:'') || inferredType;
       const no=cleanCell(iNo>=0?row[iNo]:'') || String(r+1);
-      const semanticKey=`DOCX|${inferredBookCode??'UNK'}|${ch??0}|${vs??''}|${type}|${no}`;
+      const scope=`${inferredBookCode??'UNK'}|${ch??0}|${vs??''}|${type}`; const ordinal=matchCounters.get(scope)??0; matchCounters.set(scope,ordinal+1);
+      const matchKey=`${scope}|${ordinal}`;
+      const semanticKey=cleanCell(iSem>=0?row[iSem]:'') || `DOCX|${matchKey}`;
       for (const [languageRole,col] of [['source',iEn],['target',iTr]]) {
         if (col<0) continue;
         const raw=cleanCell(row[col]??'');
         // Marker-only rows are kept even when the visible text is empty so export/structure can be reconstructed.
         if (!raw && !tag && !sub) continue;
         const norm=normalizeText(raw);
-        const protectionLevel = type==='scripture_fragment' ? 'protected_scripture' : 'normal';
+        const protectionLevel = cleanCell(iProtect>=0?row[iProtect]:'') || (type==='scripture_fragment' ? 'protected_scripture' : 'normal');
         items.push({
           bookCode:inferredBookCode,
           chapter:ch,
@@ -123,7 +128,7 @@ export function parseDocx(filePath) {
           currentText:raw,
           normalizedText:norm,
           contentHash:sha256(norm),
-          semanticKey,
+          semanticKey, matchKey, parentSemanticKey:null,
           logicalKey:semanticKey,
           protectionLevel,
           sourceLocator:`table-row:${r+1}`,
@@ -147,6 +152,7 @@ export function parseDocx(filePath) {
       normalizedText:normalizeText(text),
       contentHash:sha256(normalizeText(text)),
       semanticKey:`DOCX-P|${inferredBookCode??'UNK'}|${idx+1}`,
+      matchKey:`${inferredBookCode??'UNK'}|0||docx_paragraph|${idx}`, parentSemanticKey:null,
       logicalKey:`DOCX-P|${inferredBookCode??'UNK'}|${idx+1}`,
       protectionLevel:'normal',
       sourceLocator:`paragraph:${idx+1}`,

@@ -1,0 +1,130 @@
+{
+  "sfm": [
+    {
+      "file": "41MATGSB.SFM",
+      "items": 1591,
+      "verses": 1067,
+      "roundtripItems": 1591,
+      "roundtripVerses": 1067
+    },
+    {
+      "file": "41MATIRVTam.SFM",
+      "items": 2056,
+      "verses": 1071,
+      "roundtripItems": 2056,
+      "roundtripVerses": 1071
+    }
+  ],
+  "corrections": [
+    {
+      "file": "MAT Cross-references-recorrected.docx",
+      "items": 3224,
+      "formats": {
+        "json": {
+          "items": 3224,
+          "bytes": 2147849
+        },
+        "csv": {
+          "items": 3224,
+          "bytes": 761451
+        },
+        "tsv": {
+          "items": 3224,
+          "bytes": 758415
+        },
+        "docx": {
+          "items": 3224,
+          "bytes": 72849
+        }
+      }
+    },
+    {
+      "file": "MAT Footnotes-corrected.docx",
+      "items": 294,
+      "formats": {
+        "json": {
+          "items": 294,
+          "bytes": 237217
+        },
+        "csv": {
+          "items": 294,
+          "bytes": 108969
+        },
+        "tsv": {
+          "items": 294,
+          "bytes": 108645
+        },
+        "docx": {
+          "items": 294,
+          "bytes": 14453
+        }
+      }
+    },
+    {
+      "file": "MAT Introductions ,ESV Study Bible, Glossary, Back Matter-corrected.docx",
+      "items": 122,
+      "formats": {
+        "json": {
+          "items": 122,
+          "bytes": 150183
+        },
+        "csv": {
+          "items": 122,
+          "bytes": 97937
+        },
+        "tsv": {
+          "items": 122,
+          "bytes": 97785
+        },
+        "docx": {
+          "items": 122,
+          "bytes": 15109
+        }
+      }
+    },
+    {
+      "file": "MAT Study notes, sub-headings, chapter intros-correction.docx",
+      "items": 3470,
+      "formats": {
+        "json": {
+          "items": 3470,
+          "bytes": 3280107
+        },
+        "csv": {
+          "items": 3470,
+          "bytes": 1784703
+        },
+        "tsv": {
+          "items": 3470,
+          "bytes": 1781699
+        },
+        "docx": {
+          "items": 3470,
+          "bytes": 237826
+        }
+      }
+    }
+  ],
+  "legacy": [
+    {
+      "file": "MAT Cross-references-recorrected.doc",
+      "items": 3224,
+      "parity": true
+    },
+    {
+      "file": "MAT Footnotes-corrected.doc",
+      "items": 294,
+      "parity": true
+    },
+    {
+      "file": "MAT Introductions ,ESV Study Bible, Glossary, Back Matter-corrected.doc",
+      "items": 122,
+      "parity": true
+    },
+    {
+      "file": "MAT Study notes, sub-headings, chapter intros-correction.doc",
+      "items": 3470,
+      "parity": true
+    }
+  ]
+}

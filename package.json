@@ -1,17 +1,18 @@
 {
-  "name": "study-bible-creator-v0.3.0",
-  "version": "0.3.0",
+  "name": "study-bible-creator",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "description": "Local-first Study Bible publishing QA prototype",
+  "description": "Local-first multilingual Study Bible publishing QA application",
   "scripts": {
     "start": "node src/server.mjs",
     "test": "node --test tests/*.test.mjs",
+    "test:v04": "node --test tests/v04*.test.mjs",
     "import:pair": "node scripts/import-sfm-pair.mjs",
     "dev": "node src/server.mjs",
-    "qa:smoke": "node scripts/smoke-matthew-v0.3.mjs"
+    "qa:smoke": "node scripts/smoke-matthew-v0.4.mjs",
+    "release:check": "node scripts/check-release.mjs",
+    "release:notes": "node scripts/release-notes.mjs"
   },
-  "engines": {
-    "node": ">=22.5.0"
-  }
+  "engines": { "node": ">=22.5.0" }
 }

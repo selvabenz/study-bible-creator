@@ -15,6 +15,7 @@
       <button class="nav-item active" data-view="overview"><span>⌂</span><em>Overview</em></button>
       <button class="nav-item" data-view="books"><span>▤</span><em>Books & content</em></button>
       <button class="nav-item" data-view="import"><span>⇩</span><em>Import center</em><b id="importBadge" class="pill hidden">0</b></button>
+      <button class="nav-item" data-view="conflicts"><span>⇄</span><em>Conflict review</em><b id="conflictBadge" class="pill warning hidden">0</b></button>
       <button class="nav-item" data-view="qa"><span>✓</span><em>QA review</em><b id="qaBadge" class="pill danger hidden">0</b></button>
       <button class="nav-item" data-view="language"><span>文</span><em>Language & style</em></button>
       <button class="nav-item" data-view="publish"><span>↗</span><em>Publish & export</em></button>
@@ -77,8 +78,22 @@
       <div id="importPreview"></div>
     </section>
 
+
+    <section class="view" id="view-conflicts">
+      <div class="conflict-toolbar">
+        <div><div class="eyebrow">IMPORT SAFETY</div><h2>Duplicate & conflict resolution</h2><p>Compare existing canonical content with incoming revisions. Authority rules make recommendations; humans make the final decision.</p></div>
+        <div class="toolbar-group"><select id="conflictStatus"><option value="pending">Pending</option><option value="all">All</option><option value="keep_existing">Kept existing</option><option value="use_incoming">Used incoming</option><option value="manual_merge">Manual merge</option></select><button class="small-btn" id="reloadConflicts">↻ Refresh</button></div>
+      </div>
+      <div class="conflict-summary" id="conflictSummary"></div>
+      <div class="conflict-layout">
+        <aside class="conflict-list panel"><div class="issue-list-head"><div><strong>Import conflicts</strong><span id="conflictCount">0 conflicts</span></div></div><div id="conflictItems"></div></aside>
+        <section class="conflict-detail panel" id="conflictDetail"><div class="editor-empty"><div>⇄</div><h3>Select a conflict</h3><p>Existing and incoming content will appear side by side.</p></div></section>
+      </div>
+      <div class="panel authority-panel"><div class="panel-head"><div><small>PROJECT IMPORT POLICY</small><h3>Authority rules</h3></div><span class="status-chip">Recommendations only</span></div><div id="authorityRules" class="authority-grid"></div></div>
+    </section>
+
     <section class="view" id="view-qa">
-      <div class="qa-toolbar"><div><h2>Publishing QA</h2><p>Local deterministic checks first. No AI is used in v0.3.</p></div><button class="primary-btn" id="runQa">Run local QA</button></div>
+      <div class="qa-toolbar"><div><h2>Publishing QA</h2><p>Local deterministic checks first. No AI is used in v0.4.</p></div><button class="primary-btn" id="runQa">Run local QA</button></div>
       <div class="qa-layout">
         <aside class="filters"><strong>Severity</strong><button class="filter active" data-severity=""><span class="sev all"></span>All <b id="sevAll">0</b></button><button class="filter" data-severity="critical"><span class="sev critical"></span>Critical <b id="sevCritical">0</b></button><button class="filter" data-severity="high"><span class="sev high"></span>High <b id="sevHigh">0</b></button><button class="filter" data-severity="medium"><span class="sev medium"></span>Medium <b id="sevMedium">0</b></button><button class="filter" data-severity="low"><span class="sev low"></span>Low <b id="sevLow">0</b></button><button class="filter" data-severity="info"><span class="sev info"></span>Info <b id="sevInfo">0</b></button></aside>
         <div class="issue-list"><div class="issue-list-head"><div><strong>Open findings</strong><span id="issueCount">0 issues</span></div></div><div id="issues"></div></div>
@@ -99,7 +114,7 @@
         <button class="export-card" data-format="csv"><span>CSV</span><div><strong>CSV</strong><p>Spreadsheet exchange</p></div><em>→</em></button>
         <button class="export-card" data-format="tsv"><span>TSV</span><div><strong>TSV</strong><p>Tab-separated exchange</p></div><em>→</em></button>
         <button class="export-card" data-format="json"><span>JSON</span><div><strong>JSON</strong><p>Canonical structured data</p></div><em>→</em></button>
-        <button class="export-card disabled" disabled><span>DOCX</span><div><strong>DOCX</strong><p>Planned publishing exporter</p></div><em>M9</em></button>
+        <button class="export-card" data-format="docx"><span>DOCX</span><div><strong>DOCX</strong><p>Bilingual editorial exchange table</p></div><em>→</em></button>
       </div>
       <div class="panel publication-gate"><div class="panel-head"><div><small>Publication gate</small><h3>Current readiness checks</h3></div></div><div id="publicationGate"></div></div>
     </section>

@@ -2,7 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { id, now, safeJson } from './utils.mjs';
+import { id, now, safeJson, sha256 } from './utils.mjs';
+import { DEFAULT_AUTHORITY_RULES, authorityRecommendation, shouldAuthorityCrossMatch } from './authority.mjs';
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 
 function placeholders(n){ return Array.from({length:n},()=>'?').join(','); }
@@ -18,20 +19,28 @@ export class Store {
   #columns(table){ return new Set(this.db.prepare(`PRAGMA table_info(${table})`).all().map(x=>x.name)); }
   #addColumn(table,name,sql){ if(!this.#columns(table).has(name)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${sql}`); }
   #migrate(){
-    // Additive v0.2 -> v0.3 compatibility for existing development databases.
     this.#addColumn('projects','source_script','TEXT');
     this.#addColumn('content_items','semantic_key',"TEXT NOT NULL DEFAULT ''");
+    this.#addColumn('content_items','match_key',"TEXT NOT NULL DEFAULT ''");
+    this.#addColumn('content_items','parent_semantic_key','TEXT');
     this.#addColumn('content_items','language_role','TEXT');
     this.#addColumn('content_items','review_status',"TEXT NOT NULL DEFAULT 'unreviewed'");
+    this.#addColumn('content_items','canonical_state',"TEXT NOT NULL DEFAULT 'active'");
     this.#addColumn('qa_issues','paired_content_item_id','TEXT');
     this.#addColumn('qa_issues','fingerprint','TEXT');
-    this.db.exec(`CREATE TABLE IF NOT EXISTS import_conflicts (
-      id TEXT PRIMARY KEY,batch_id TEXT NOT NULL,project_id TEXT NOT NULL,existing_content_item_id TEXT NOT NULL,
-      semantic_key TEXT NOT NULL,language_code TEXT,language_role TEXT,incoming_text TEXT NOT NULL,incoming_raw_text TEXT NOT NULL DEFAULT '',
-      incoming_hash TEXT NOT NULL,source_locator TEXT,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,resolved_at TEXT
-    )`);
+    this.db.exec(`CREATE TABLE IF NOT EXISTS authority_rules (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,content_type TEXT NOT NULL,resource_role TEXT NOT NULL,priority INTEGER NOT NULL DEFAULT 0,notes TEXT,created_at TEXT NOT NULL,UNIQUE(project_id,content_type,resource_role))`);
+    this.db.exec(`CREATE TABLE IF NOT EXISTS import_conflicts (id TEXT PRIMARY KEY,batch_id TEXT NOT NULL,project_id TEXT NOT NULL,existing_content_item_id TEXT NOT NULL,semantic_key TEXT NOT NULL,match_key TEXT NOT NULL DEFAULT '',language_code TEXT,language_role TEXT,existing_resource_role TEXT,incoming_resource_role TEXT,incoming_file_id TEXT,incoming_resource_id TEXT,incoming_text TEXT NOT NULL,incoming_raw_text TEXT NOT NULL DEFAULT '',incoming_hash TEXT NOT NULL,incoming_marker TEXT,incoming_category TEXT,source_locator TEXT,authority_recommendation TEXT NOT NULL DEFAULT 'manual_review',authority_reason TEXT,status TEXT NOT NULL DEFAULT 'pending',resolution_reason TEXT,resolved_by TEXT,created_at TEXT NOT NULL,resolved_at TEXT)`);
+    for(const [name,sql] of [['match_key',"TEXT NOT NULL DEFAULT ''"],['existing_resource_role','TEXT'],['incoming_resource_role','TEXT'],['incoming_file_id','TEXT'],['incoming_resource_id','TEXT'],['incoming_marker','TEXT'],['incoming_category','TEXT'],['authority_recommendation',"TEXT NOT NULL DEFAULT 'manual_review'"],['authority_reason','TEXT'],['resolution_reason','TEXT'],['resolved_by','TEXT']]) this.#addColumn('import_conflicts',name,sql);
     this.db.exec(`UPDATE content_items SET semantic_key=logical_key WHERE IFNULL(semantic_key,'')=''`);
+    this.db.exec(`UPDATE content_items SET match_key=semantic_key WHERE IFNULL(match_key,'')=''`);
     try{ this.db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_qa_fingerprint ON qa_issues(project_id,fingerprint) WHERE fingerprint IS NOT NULL`); }catch{}
+    try{ this.db.exec(`CREATE INDEX IF NOT EXISTS idx_content_match ON content_items(project_id,match_key,language_code,canonical_state)`); }catch{}
+    for(const p of this.db.prepare('SELECT id FROM projects').all()) this.#seedAuthority(p.id);
+  }
+
+  #seedAuthority(projectId){
+    const stmt=this.db.prepare('INSERT OR IGNORE INTO authority_rules(id,project_id,content_type,resource_role,priority,notes,created_at) VALUES(?,?,?,?,?,?,?)');
+    const t=now(); for(const [contentType,role,priority,notes] of DEFAULT_AUTHORITY_RULES) stmt.run(id('auth'),projectId,contentType,role,priority,notes,t);
   }
 
   createProject(p) {
@@ -42,6 +51,7 @@ export class Store {
       {code:p.sourceLanguageCode||'en',name:p.sourceLanguageName||'English',script:p.sourceScript||'Latin',direction:'ltr',role:'source'},
       ...(p.targetLanguageCode?[{code:p.targetLanguageCode,name:p.targetLanguageName||p.targetLanguageCode,script:p.targetScript||null,direction:p.textDirection||'ltr',role:'target'}]:[])
     ]) this.db.prepare(`INSERT OR IGNORE INTO languages(id,project_id,code,name,script,direction,role,created_at) VALUES(?,?,?,?,?,?,?,?)`).run(id('lang'),projectId,l.code,l.name,l.script,l.direction,l.role,t);
+    this.#seedAuthority(projectId);
     return this.getProject(projectId);
   }
 
@@ -53,7 +63,10 @@ export class Store {
       FROM projects p ORDER BY created_at DESC`).all();
   }
   findFileByHash(projectId,sha,role,lang){ return this.db.prepare('SELECT * FROM import_files WHERE project_id=? AND sha256=? AND resource_role=? AND IFNULL(language_code,\'\')=IFNULL(?,\'\')').get(projectId,sha,role,lang||null); }
-  existingByLogicalKey(projectId,key){ return this.db.prepare('SELECT id,content_hash,current_text,raw_text,logical_key,semantic_key,language_code,language_role,protection_level FROM content_items WHERE project_id=? AND logical_key=? LIMIT 1').get(projectId,key); }
+  existingByLogicalKey(projectId,key){ return this.db.prepare(`SELECT c.id,c.content_hash,c.current_text,c.raw_text,c.logical_key,c.semantic_key,c.match_key,c.language_code,c.language_role,c.protection_level,c.resource_id,c.source_file_id,r.role resource_role,r.title resource_title FROM content_items c LEFT JOIN resources r ON r.id=c.resource_id WHERE c.project_id=? AND c.logical_key=? AND c.canonical_state='active' LIMIT 1`).get(projectId,key); }
+  existingByMatchKey(projectId,languageCode,matchKey){ return this.db.prepare(`SELECT c.id,c.content_hash,c.current_text,c.raw_text,c.logical_key,c.semantic_key,c.match_key,c.language_code,c.language_role,c.protection_level,c.resource_id,c.source_file_id,c.content_type,c.marker,c.category,r.role resource_role,r.title resource_title FROM content_items c LEFT JOIN resources r ON r.id=c.resource_id WHERE c.project_id=? AND IFNULL(c.language_code,'')=IFNULL(?,'') AND c.match_key=? AND c.canonical_state='active' ORDER BY c.created_at DESC LIMIT 1`).get(projectId,languageCode||null,matchKey); }
+  authorityPriority(projectId,contentType,resourceRole){ return this.db.prepare('SELECT priority FROM authority_rules WHERE project_id=? AND content_type=? AND resource_role=?').get(projectId,contentType,resourceRole)?.priority??0; }
+  listAuthorityRules(projectId){ return this.db.prepare('SELECT * FROM authority_rules WHERE project_id=? ORDER BY content_type,priority DESC,resource_role').all(projectId); }
   startBatch(projectId,summary={}){ const bid=id('batch'); this.db.prepare('INSERT INTO import_batches(id,project_id,created_at,status,summary_json) VALUES(?,?,?,?,?)').run(bid,projectId,now(),'preview',safeJson(summary)); return bid; }
 
   resolveItemLanguage(project,item,languageCode,resourceRole){
@@ -82,28 +95,29 @@ export class Store {
       this.db.prepare(`INSERT INTO import_files(id,batch_id,project_id,original_filename,format,sha256,byte_size,language_code,resource_role,imported_at,source_path) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).run(fileId,batchId,projectId,filename,format,sha,byteSize,languageCode||null,resourceRole,t,sourcePath||null);
       const codes=[...new Set(parsed.items.map(x=>x.bookCode).filter(Boolean))];
       for(const code of codes) this.db.prepare('INSERT OR IGNORE INTO books(id,project_id,book_code,created_at) VALUES(?,?,?,?)').run(id('book'),projectId,code,t);
-      const resourceId=id('res');
-      const mixedLanguage=parsed.items.some(x=>x.languageRole==='source')&&parsed.items.some(x=>x.languageRole==='target');
+      const resourceId=id('res'); const mixedLanguage=parsed.items.some(x=>x.languageRole==='source')&&parsed.items.some(x=>x.languageRole==='target');
       this.db.prepare('INSERT INTO resources(id,project_id,language_code,role,book_code,title,source_import_file_id,created_at) VALUES(?,?,?,?,?,?,?,?)').run(resourceId,projectId,mixedLanguage?null:(languageCode||null),resourceRole,codes.length===1?codes[0]:null,filename,fileId,t);
-      const stmt=this.db.prepare(`INSERT INTO content_items(id,project_id,resource_id,book_code,chapter,verse,content_type,marker,category,sequence_no,semantic_key,logical_key,language_code,language_role,protection_level,review_status,current_text,raw_text,normalized_text,content_hash,source_file_id,source_locator,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-      const conflictStmt=this.db.prepare(`INSERT INTO import_conflicts(id,batch_id,project_id,existing_content_item_id,semantic_key,language_code,language_role,incoming_text,incoming_raw_text,incoming_hash,source_locator,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-      let inserted=0, skipped=0, changed=0;
+      const stmt=this.db.prepare(`INSERT INTO content_items(id,project_id,resource_id,book_code,chapter,verse,content_type,marker,category,sequence_no,semantic_key,match_key,parent_semantic_key,logical_key,language_code,language_role,protection_level,review_status,canonical_state,current_text,raw_text,normalized_text,content_hash,source_file_id,source_locator,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+      const conflictStmt=this.db.prepare(`INSERT INTO import_conflicts(id,batch_id,project_id,existing_content_item_id,semantic_key,match_key,language_code,language_role,existing_resource_role,incoming_resource_role,incoming_file_id,incoming_resource_id,incoming_text,incoming_raw_text,incoming_hash,incoming_marker,incoming_category,source_locator,authority_recommendation,authority_reason,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+      let inserted=0, skipped=0, changed=0, overlaps=0;
       for(const item of parsed.items) {
-        const resolved=this.resolveItemLanguage(project,item,languageCode,resourceRole);
-        const semanticKey=item.semanticKey||item.logicalKey;
+        const resolved=this.resolveItemLanguage(project,item,languageCode,resourceRole); const semanticKey=item.semanticKey||item.logicalKey; const matchKey=item.matchKey||semanticKey;
         const scopedKey=this.scopedLogicalKey(resourceRole,resolved.languageCode,semanticKey);
-        const existing=this.existingByLogicalKey(projectId,scopedKey);
-        if(existing?.content_hash===item.contentHash){skipped++;continue;}
-        if(existing){
-          changed++;
-          conflictStmt.run(id('conf'),batchId,projectId,existing.id,semanticKey,resolved.languageCode,resolved.languageRole,item.currentText||'',item.rawText||'',item.contentHash,item.sourceLocator||null,'pending',t);
-          continue;
+        let existing=this.existingByLogicalKey(projectId,scopedKey); let crossRole=false;
+        if(!existing && matchKey && ['scripture','scripture_fragment','footnote','cross_reference','study_note','section_heading','introduction','introduction_heading','introduction_title','outline','figure'].includes(item.contentType)){
+          const candidate=this.existingByMatchKey(projectId,resolved.languageCode,matchKey); if(candidate && candidate.resource_role!==resourceRole && shouldAuthorityCrossMatch(item.contentType,candidate.resource_role,resourceRole)){existing=candidate;crossRole=true;}
         }
-        stmt.run(id('cnt'),projectId,resourceId,item.bookCode||null,item.chapter||null,item.verse||null,item.contentType,item.marker||null,item.category||null,item.sequenceNo||0,semanticKey,scopedKey,resolved.languageCode,resolved.languageRole,item.protectionLevel||'normal','unreviewed',item.currentText||'',item.rawText||'',item.normalizedText||'',item.contentHash,fileId,item.sourceLocator||null,t,t); inserted++;
+        if(existing?.content_hash===item.contentHash){skipped++; if(crossRole)overlaps++; continue;}
+        if(existing){
+          changed++; if(crossRole)overlaps++;
+          const oldP=this.authorityPriority(projectId,item.contentType,existing.resource_role||''); const newP=this.authorityPriority(projectId,item.contentType,resourceRole);
+          const a=authorityRecommendation({contentType:item.contentType,protectionLevel:existing.protection_level,existingRole:existing.resource_role||'unknown',incomingRole:resourceRole,existingPriority:oldP,incomingPriority:newP});
+          conflictStmt.run(id('conf'),batchId,projectId,existing.id,semanticKey,matchKey,resolved.languageCode,resolved.languageRole,existing.resource_role||null,resourceRole,fileId,resourceId,item.currentText||'',item.rawText||'',item.contentHash,item.marker||null,item.category||null,item.sourceLocator||null,a.recommendation,a.reason,'pending',t); continue;
+        }
+        stmt.run(id('cnt'),projectId,resourceId,item.bookCode||null,item.chapter||null,item.verse||null,item.contentType,item.marker||null,item.category||null,item.sequenceNo||0,semanticKey,matchKey,item.parentSemanticKey||null,scopedKey,resolved.languageCode,resolved.languageRole,item.protectionLevel||'normal','unreviewed','active',item.currentText||'',item.rawText||'',item.normalizedText||'',item.contentHash,fileId,item.sourceLocator||null,t,t); inserted++;
       }
-      this.db.prepare('UPDATE import_batches SET status=\'committed\',committed_at=?,summary_json=? WHERE id=?').run(t,safeJson({inserted,skipped,changed}),batchId);
-      this.db.exec('COMMIT');
-      return {fileId,resourceId,inserted,skipped,changed,books:codes};
+      this.db.prepare('UPDATE import_batches SET status=\'committed\',committed_at=?,summary_json=? WHERE id=?').run(t,safeJson({inserted,skipped,changed,overlaps}),batchId);
+      this.db.exec('COMMIT'); return {fileId,resourceId,inserted,skipped,changed,overlaps,books:codes};
     } catch(e){ this.db.exec('ROLLBACK'); throw e; }
   }
 
@@ -145,8 +159,8 @@ export class Store {
     if(chapter!=null){where.push('chapter=?');args.push(Number(chapter));}
     if(contentType){where.push('content_type=?');args.push(contentType);}
     if(languageRole){where.push('language_role=?');args.push(languageRole);}
-    const sql=`SELECT id,resource_id,book_code,chapter,verse,content_type,marker,category,sequence_no,semantic_key,logical_key,language_code,language_role,protection_level,review_status,current_text,raw_text,source_locator,created_at,updated_at
-      FROM content_items WHERE ${where.join(' AND ')} ORDER BY book_code,chapter,sequence_no LIMIT ? OFFSET ?`;
+    const sql=`SELECT c.id,c.resource_id,c.book_code,c.chapter,c.verse,c.content_type,c.marker,c.category,c.sequence_no,c.semantic_key,c.match_key,c.parent_semantic_key,c.logical_key,c.language_code,c.language_role,c.protection_level,c.review_status,c.canonical_state,c.current_text,c.raw_text,c.source_locator,c.created_at,c.updated_at,r.role resource_role,r.title resource_title
+      FROM content_items c LEFT JOIN resources r ON r.id=c.resource_id WHERE ${where.map(x=>'c.'+x).join(' AND ')} ORDER BY c.book_code,c.chapter,c.sequence_no LIMIT ? OFFSET ?`;
     return this.db.prepare(sql).all(...args,Math.min(Number(limit)||300,1000),Number(offset)||0);
   }
 
@@ -174,9 +188,31 @@ export class Store {
   }
 
   listConflicts(projectId,status='pending'){
-    return this.db.prepare(`SELECT c.*,e.current_text existing_text,e.protection_level,e.book_code,e.chapter,e.verse,e.content_type
-      FROM import_conflicts c JOIN content_items e ON e.id=c.existing_content_item_id
-      WHERE c.project_id=? AND c.status=? ORDER BY c.created_at DESC`).all(projectId,status);
+    const where=['c.project_id=?'];const args=[projectId]; if(status&&status!=='all'){where.push('c.status=?');args.push(status);}
+    return this.db.prepare(`SELECT c.*,e.current_text existing_text,e.raw_text existing_raw_text,e.protection_level,e.book_code,e.chapter,e.verse,e.content_type,e.marker existing_marker,e.category existing_category,e.review_status,
+      er.role existing_role,er.title existing_resource,ifr.original_filename incoming_filename
+      FROM import_conflicts c JOIN content_items e ON e.id=c.existing_content_item_id LEFT JOIN resources er ON er.id=e.resource_id LEFT JOIN import_files ifr ON ifr.id=c.incoming_file_id
+      WHERE ${where.join(' AND ')} ORDER BY CASE c.authority_recommendation WHEN 'use_incoming' THEN 1 WHEN 'manual_review' THEN 2 ELSE 3 END,c.created_at DESC`).all(...args);
+  }
+
+  resolveConflict(projectId,conflictId,{action,actor='Human editor',reason='',mergedText=null,confirmProtected=false}={}){
+    const allowed=new Set(['keep_existing','use_incoming','manual_merge']); if(!allowed.has(action)) throw new Error('Invalid conflict resolution action');
+    const c=this.db.prepare(`SELECT c.*,e.current_text existing_text,e.raw_text existing_raw_text,e.content_hash existing_hash,e.protection_level,e.review_status FROM import_conflicts c JOIN content_items e ON e.id=c.existing_content_item_id WHERE c.id=? AND c.project_id=?`).get(conflictId,projectId);
+    if(!c) throw new Error('Conflict not found'); if(c.status!=='pending') throw new Error('Conflict is already resolved');
+    if(c.protection_level==='protected_scripture' && action!=='keep_existing' && !confirmProtected) throw new Error('Protected Scripture requires explicit human confirmation');
+    if((action==='use_incoming'||action==='manual_merge') && !String(reason||'').trim()) throw new Error('A human reason is required when changing existing content');
+    const t=now(); this.db.exec('BEGIN');
+    try{
+      if(action==='use_incoming'||action==='manual_merge'){
+        const next=this.db.prepare('SELECT IFNULL(MAX(revision_no),0)+1 n FROM content_versions WHERE content_item_id=?').get(c.existing_content_item_id).n;
+        this.db.prepare('INSERT INTO content_versions(id,content_item_id,revision_no,text,change_type,changed_by,reason,created_at) VALUES(?,?,?,?,?,?,?,?)').run(id('ver'),c.existing_content_item_id,next,c.existing_text,action,actor,reason,t);
+        const text=action==='manual_merge'?String(mergedText??''):c.incoming_text; if(action==='manual_merge'&&!text.trim())throw new Error('Merged text is required');
+        this.db.prepare(`UPDATE content_items SET current_text=?,raw_text=?,normalized_text=?,content_hash=?,review_status='needs_review',resource_id=COALESCE(?,resource_id),source_file_id=COALESCE(?,source_file_id),source_locator=COALESCE(?,source_locator),updated_at=? WHERE id=?`)
+          .run(text,action==='manual_merge'?text:c.incoming_raw_text,text.normalize('NFC').trim(),sha256(text.normalize('NFC').trim()),c.incoming_resource_id,c.incoming_file_id,c.source_locator,t,c.existing_content_item_id);
+      }
+      this.db.prepare(`UPDATE import_conflicts SET status=?,resolution_reason=?,resolved_by=?,resolved_at=? WHERE id=? AND project_id=?`).run(action,reason||null,actor,t,conflictId,projectId);
+      this.db.exec('COMMIT'); return this.db.prepare('SELECT * FROM import_conflicts WHERE id=?').get(conflictId);
+    }catch(e){this.db.exec('ROLLBACK');throw e;}
   }
 
   listIssues(projectId,{status='open',severity=null,limit=500}={}){
@@ -215,7 +251,7 @@ export class Store {
   listGlossary(projectId){ return this.db.prepare(`SELECT * FROM glossary_terms WHERE project_id=? ORDER BY status='approved' DESC,evidence_count DESC,source_term,target_term LIMIT 500`).all(projectId); }
 
   exportRows(projectId,{bookCode=null,languageCode=null,resourceRole=null}={}){
-    const where=['c.project_id=?'];const args=[projectId];
+    const where=['c.project_id=?',"c.canonical_state='active'"];const args=[projectId];
     if(bookCode){where.push('c.book_code=?');args.push(bookCode);}
     if(languageCode){where.push('c.language_code=?');args.push(languageCode);}
     if(resourceRole){where.push('r.role=?');args.push(resourceRole);}

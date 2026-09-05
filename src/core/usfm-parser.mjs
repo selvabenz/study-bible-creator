@@ -71,6 +71,7 @@ export function parseUsfm(buffer, options={}) {
   const items = [];
   const warnings = [];
   const semanticCounters = new Map();
+  const matchCounters = new Map();
 
   function nextOrdinal(scope) {
     const n = semanticCounters.get(scope) ?? 0;
@@ -89,16 +90,25 @@ export function parseUsfm(buffer, options={}) {
     return `${scope}|${nextOrdinal(scope)}`;
   }
 
+  function matchKeyFor(contentType, verse) {
+    const b=bookCode ?? 'UNK'; const c=chapter ?? 0; const v=verse == null ? '' : String(verse);
+    if (contentType === 'scripture') return `${b}|${c}|${v}|scripture`;
+    if (contentType === 'chapter') return `${b}|${c}|chapter`;
+    if (contentType === 'book_id') return `${b}|book_id`;
+    const scope=`${b}|${c}|${v}|${contentType}`; const n=matchCounters.get(scope)??0; matchCounters.set(scope,n+1); return `${scope}|${n}`;
+  }
+
   function add({contentType, marker, verse=currentVerse, rawText='', textValue='', parentSemanticKey=null, sourceLocator=null, category=null}) {
     const normalized = normalizeText(textValue);
     const semanticKey = semanticKeyFor(contentType, marker, verse, category);
+    const matchKey = matchKeyFor(contentType, verse);
     const item = {
       bookCode, chapter, verse: verse == null ? null : String(verse),
       contentType, marker: marker ?? null, category,
       sequenceNo: sequence++, parentSemanticKey,
       rawText, currentText: textValue, normalizedText: normalized,
       contentHash: sha256(normalized),
-      semanticKey,
+      semanticKey, matchKey, parentSemanticKey,
       logicalKey: semanticKey,
       protectionLevel: contentType === 'scripture' ? 'protected_scripture' : 'normal',
       sourceLocator: sourceLocator ?? `line:${sequence}`
