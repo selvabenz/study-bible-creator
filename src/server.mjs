@@ -10,9 +10,11 @@ import { exportItems } from './core/exporter.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(__dirname,'..');
-fs.mkdirSync(path.join(root,'data'),{recursive:true});
-fs.mkdirSync(path.join(root,'tmp'),{recursive:true});
-const store=new Store(path.join(root,'data','study_bible.db'));
+const dataRoot=process.env.SBC_DESKTOP_DATA_DIR?path.resolve(process.env.SBC_DESKTOP_DATA_DIR):root;
+fs.mkdirSync(path.join(dataRoot,'data'),{recursive:true});
+fs.mkdirSync(path.join(dataRoot,'tmp'),{recursive:true});
+const store=new Store(path.join(dataRoot,'data','study_bible.db'));
+const desktopToken=process.env.SBC_DESKTOP_TOKEN||'';
 const previews=new Map();
 
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png'};
@@ -30,7 +32,12 @@ function contentDisposition(name){return `attachment; filename="${String(name).r
 const server=http.createServer(async(req,res)=>{
   try{
     const url=new URL(req.url,'http://localhost');
-    if(url.pathname==='/api/health') return send(res,200,{ok:true,version:'0.4.0',localFirst:true,aiEnabled:false});
+    if(url.pathname==='/api/health') return send(res,200,{ok:true,version:'0.5.0',localFirst:true,aiEnabled:false,desktop:Boolean(desktopToken)});
+    if(desktopToken && url.pathname==='/__desktop_auth'){
+      if(url.searchParams.get('token')!==desktopToken) return send(res,403,{error:'Forbidden'});
+      res.writeHead(302,{'set-cookie':`sbc_session=${desktopToken}; HttpOnly; SameSite=Strict; Path=/`,'location':'/'}); return res.end();
+    }
+    if(desktopToken && url.pathname.startsWith('/api/') && !String(req.headers.cookie||'').split(';').some(x=>x.trim()===`sbc_session=${desktopToken}`)) return send(res,401,{error:'Desktop session authentication required'});
     if(url.pathname==='/api/projects'&&req.method==='GET') return send(res,200,store.listProjects());
     if(url.pathname==='/api/projects'&&req.method==='POST') return send(res,201,store.createProject(jsonBody(await body(req))));
 
@@ -98,7 +105,7 @@ const server=http.createServer(async(req,res)=>{
       const format=req.headers['x-format']||'auto';
       if(!projectId) return send(res,400,{error:'x-project-id required'});
       const b=await body(req);
-      const temp=path.join(root,'tmp',`${Date.now()}-${Math.random().toString(36).slice(2)}-${path.basename(filename)}`);
+      const temp=path.join(dataRoot,'tmp',`${Date.now()}-${Math.random().toString(36).slice(2)}-${path.basename(filename)}`);
       fs.writeFileSync(temp,b);
       try {
         const preview=previewImport(store,{projectId,filePath:temp,originalFilename:filename,languageCode:lang,resourceRole:role,format});
@@ -130,4 +137,4 @@ const server=http.createServer(async(req,res)=>{
 });
 
 const PORT=process.env.PORT||4173;
-server.listen(PORT,'127.0.0.1',()=>console.log(`Study Bible Creator v0.4.0: http://127.0.0.1:${PORT}`));
+server.listen(PORT,'127.0.0.1',()=>console.log(`Study Bible Creator v0.5.0: http://127.0.0.1:${PORT}`));

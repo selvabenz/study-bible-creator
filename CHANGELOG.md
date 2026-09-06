@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 - 2026-09-06
+
+### Added
+- Tauri 2 native desktop shell for Windows, macOS and Linux.
+- Bundled Node runtime sidecar preparation so installed users do not need Node.js.
+- Per-launch authenticated loopback desktop session and local app-data database path.
+- Single-instance desktop protection.
+- Cross-platform installer build/release workflow and desktop release-gap checks.
+
+### Changed
+- Application version advanced to 0.5.0.
+- Local server now supports desktop data isolation and authenticated desktop API sessions.
+
+
 All notable development changes to Study Bible Creator are recorded here.
 
 ## [0.4.0] - 2026-09-05

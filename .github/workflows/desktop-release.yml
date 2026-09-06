@@ -1,21 +1,41 @@
-name: Desktop Packaging Smoke Test
+name: Desktop Installer Smoke Build
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths: ['src-tauri/**','src/**','public/**','scripts/prepare-desktop.mjs','package.json']
 
 permissions:
   contents: read
 
 jobs:
-  detect:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: '--bundles nsis'
+          - os: macos-14
+            args: '--bundles dmg'
+          - os: ubuntu-24.04
+            args: '--bundles appimage,deb'
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Desktop shell status
-        shell: bash
-        run: |
-          if [ -f src-tauri/Cargo.toml ]; then
-            echo "Tauri shell is present. Versioned installers are produced by release.yml on v* tags."
-          else
-            echo "Tauri shell is not present yet. Executable packaging starts at Milestone M2."
-          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: node scripts/prepare-desktop.mjs
+      - run: npx --yes @tauri-apps/cli@2.11.4 build ${{ matrix.args }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ runner.os }}
+          path: src-tauri/target/release/bundle/**

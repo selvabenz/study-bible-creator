@@ -153,3 +153,19 @@ No iteration is considered deliverable until:
 8. version, changelog, release notes and GitHub-ready commit messages agree;
 9. GitHub Actions configuration validates;
 10. once M2 exists, version tags build platform installers automatically.
+
+## M2 status — v0.5.0 Native Desktop Foundation
+Implemented in source on 2026-09-06:
+- Tauri 2 desktop shell
+- bundled Node runtime sidecar preparation
+- OS app-data SQLite storage
+- loopback-only authenticated desktop session
+- single-instance protection
+- Windows/macOS/Linux installer build workflows
+- v0.5.0 release/version checks
+
+Exit gate still requiring GitHub native runners:
+- successful NSIS Windows build
+- successful macOS DMG build
+- successful Linux AppImage/deb build
+- install/launch smoke check from generated artifacts

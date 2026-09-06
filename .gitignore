@@ -55,3 +55,9 @@ Thumbs.db
 *.pkg
 *.rpm
 *.tar.gz
+
+# Tauri generated/build output
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/node-*
+src-tauri/resources/app/

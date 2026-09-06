@@ -1,6 +1,6 @@
 {
   "name": "study-bible-creator",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Local-first multilingual Study Bible publishing QA application",
@@ -12,7 +12,13 @@
     "dev": "node src/server.mjs",
     "qa:smoke": "node scripts/smoke-matthew-v0.4.mjs",
     "release:check": "node scripts/check-release.mjs",
-    "release:notes": "node scripts/release-notes.mjs"
+    "release:notes": "node scripts/release-notes.mjs",
+    "desktop:prepare": "node scripts/prepare-desktop.mjs",
+    "desktop:dev": "node scripts/prepare-desktop.mjs && npx --yes @tauri-apps/cli@2.11.4 dev",
+    "desktop:build": "node scripts/prepare-desktop.mjs && npx --yes @tauri-apps/cli@2.11.4 build",
+    "test:v05": "node --test tests/v05-desktop.test.mjs"
   },
-  "engines": { "node": ">=22.5.0" }
+  "engines": {
+    "node": ">=22.5.0"
+  }
 }
