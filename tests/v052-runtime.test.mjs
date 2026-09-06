@@ -32,4 +32,6 @@ test('desktop passes package version to the local server health endpoint',()=>{
   assert.match(lib,/SBC_APP_VERSION/);
   assert.match(server,/const APP_VERSION=process\.env\.SBC_APP_VERSION/);
   assert.match(server,/version:APP_VERSION/);
+  assert.match(server,/packageVersion/);
+  assert.doesNotMatch(server,/SBC_APP_VERSION\|\|'0\.5\.2'/);
 });

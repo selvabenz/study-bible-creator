@@ -15,7 +15,8 @@ fs.mkdirSync(path.join(dataRoot,'data'),{recursive:true});
 fs.mkdirSync(path.join(dataRoot,'tmp'),{recursive:true});
 const store=new Store(path.join(dataRoot,'data','study_bible.db'));
 const desktopToken=process.env.SBC_DESKTOP_TOKEN||'';
-const APP_VERSION=process.env.SBC_APP_VERSION||'0.5.2';
+const packageVersion=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
+const APP_VERSION=process.env.SBC_APP_VERSION||packageVersion;
 const previews=new Map();
 
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png'};
