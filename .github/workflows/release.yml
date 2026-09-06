@@ -3,6 +3,12 @@ name: Versioned Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to rebuild (for example v0.5.1)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -10,8 +16,22 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release_tag.outputs.tag }}
     steps:
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release_tag.outputs.tag }}
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm ci --ignore-scripts
@@ -20,14 +40,14 @@ jobs:
         shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          test "v$VERSION" = "${GITHUB_REF_NAME}"
+          test "v$VERSION" = "${{ steps.release_tag.outputs.tag }}"
           grep -q "version = \"$VERSION\"" src-tauri/Cargo.toml
           grep -q "\"version\": \"$VERSION\"" src-tauri/tauri.conf.json
 
   desktop:
     needs: verify
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -39,6 +59,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - uses: dtolnay/rust-toolchain@stable
@@ -52,24 +74,30 @@ jobs:
         with:
           name: native-${{ runner.os }}
           path: src-tauri/target/release/bundle/**
+          if-no-files-found: error
 
   publish:
-    needs: desktop
+    needs: [verify, desktop]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
       - uses: actions/download-artifact@v4
         with: { path: release-assets }
-      - name: Package source
+      - name: Package source and checksums
+        shell: bash
         run: |
-          zip -qr "Study-Bible-Creator_${GITHUB_REF_NAME}_source.zip" . -x '.git/*' 'src-tauri/target/*' 'release-assets/*'
-          find release-assets -type f -print0 | xargs -0 sha256sum > SHA256SUMS.txt || true
-          sha256sum "Study-Bible-Creator_${GITHUB_REF_NAME}_source.zip" >> SHA256SUMS.txt
+          TAG="${{ needs.verify.outputs.tag }}"
+          zip -qr "Study-Bible-Creator_${TAG}_source.zip" . -x '.git/*' 'src-tauri/target/*' 'release-assets/*'
+          find release-assets -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          sha256sum "Study-Bible-Creator_${TAG}_source.zip" >> SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.verify.outputs.tag }}
           prerelease: true
-          body_path: docs/RELEASE_NOTES_v0.5.0.md
+          body_path: docs/RELEASE_NOTES_v0.5.1.md
           files: |
             release-assets/**
-            Study-Bible-Creator_${{ github.ref_name }}_source.zip
+            Study-Bible-Creator_${{ needs.verify.outputs.tag }}_source.zip
             SHA256SUMS.txt

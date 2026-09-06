@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.1] - 2026-09-06
+
+### Fixed
+- Replaced PowerShell/zip/unzip DOCX archive operations with pure Node ZIP read/write logic.
+- Fixed Windows DOCX round-trip CI failure.
+- Release matrix now reports every desktop platform independently with `fail-fast: false`.
+- Added manual versioned-release recovery for an existing tag.
+- Added the complete Tauri desktop icon set (`icon.png`, Windows ICO, macOS ICNS, and Linux PNG sizes) required by native builds.
+- Fixed the macOS Tauri compile failure caused by the missing `src-tauri/icons/icon.png`.
+
 ## 0.5.0 - 2026-09-06
 
 ### Added

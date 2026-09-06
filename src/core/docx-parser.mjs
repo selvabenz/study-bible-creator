@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { decodeXml, normalizeText, sha256 } from './utils.mjs';
+import { readZipEntry } from './zip.mjs';
 
 function textFromXml(xml) {
   const parts=[];
@@ -15,24 +15,6 @@ function textFromXml(xml) {
   return parts.join('').normalize('NFC').replace(/[\u200B\u200C\u200D\uFEFF]/g,'').replace(/[ \r]+/g,' ').replace(/ *\n */g,'\n').trim();
 }
 
-function readZipEntry(filePath, entryName) {
-  if (process.platform === 'win32') {
-    const ps = [
-      'Add-Type -AssemblyName System.IO.Compression.FileSystem;',
-      '$z=[IO.Compression.ZipFile]::OpenRead($args[0]);',
-      'try {',
-      '  $e=$z.GetEntry($args[1]); if(-not $e){ exit 3 };',
-      '  $s=$e.Open(); try {',
-      '    $ms=New-Object IO.MemoryStream; $s.CopyTo($ms);',
-      '    $bytes=$ms.ToArray();',
-      '    $stdout=[Console]::OpenStandardOutput(); $stdout.Write($bytes,0,$bytes.Length);',
-      '  } finally { $s.Dispose() }',
-      '} finally { $z.Dispose() }'
-    ].join(' ');
-    return execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',ps,filePath,entryName],{maxBuffer:50*1024*1024});
-  }
-  return execFileSync('unzip',['-p',filePath,entryName],{maxBuffer:50*1024*1024});
-}
 
 function cleanCell(value) {
   const s = String(value ?? '').normalize('NFC').replace(/[\u200B\u200C\u200D\uFEFF]/g,'').replace(/[ \r]+/g,' ').replace(/ *\n */g,'\n').trim();

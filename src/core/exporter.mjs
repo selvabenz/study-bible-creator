@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { zipDirectory } from './zip.mjs';
 
 export const CANONICAL_SCHEMA_VERSION='sbc-0.4';
 export const CANONICAL_HEADERS=[
@@ -28,15 +28,6 @@ function wText(v){
 }
 function markerDisplay(marker){const m=String(marker??'').trim();if(!m)return '';return m.startsWith('\\')?m:`\\${m}`;}
 
-function zipDirectory(dir,outPath){
-  fs.rmSync(outPath,{force:true});
-  if(process.platform==='win32'){
-    const ps=`Compress-Archive -Path (Join-Path $args[0] '*') -DestinationPath $args[1] -Force`;
-    execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',ps,dir,outPath]);
-  } else {
-    execFileSync('zip',['-q','-r',outPath,'.'],{cwd:dir});
-  }
-}
 
 function writeDocx(items,outPath){
   const rows=items.map(canonicalRow);

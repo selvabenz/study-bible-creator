@@ -1,9 +1,9 @@
-# Study Bible Creator v0.5.0
+# Study Bible Creator v0.5.1
 
 Local-first multilingual Study Bible publishing QA application.
 
-## v0.5.0 — M2 Native Desktop Foundation
-v0.5.0 adds a Tauri 2 desktop shell for Windows, macOS and Linux while preserving the proven SQLite/import/conflict/QA core.
+## v0.5.1 — M2 Native Desktop Foundation
+v0.5.1 adds a Tauri 2 desktop shell for Windows, macOS and Linux while preserving the proven SQLite/import/conflict/QA core.
 
 ### Desktop architecture
 - Tauri 2 native shell
@@ -41,8 +41,8 @@ Installed users do not need Node.js; the release bundle includes the Node sideca
 Normal pushes run CI. After CI and native installer smoke builds succeed, tag the version:
 
 ```bash
-git tag v0.5.0
-git push origin v0.5.0
+git tag v0.5.1
+git push origin v0.5.1
 ```
 
-See `docs/TEST_REPORT_v0.5.0.md`, `docs/RELEASE_NOTES_v0.5.0.md`, and `docs/COMMIT_v0.5.0.md`.
+See `docs/TEST_REPORT_v0.5.1.md`, `docs/RELEASE_NOTES_v0.5.1.md`, and `docs/COMMIT_v0.5.1.md`.
