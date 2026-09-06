@@ -12,6 +12,16 @@ export class Store {
   constructor(dbPath) {
     fs.mkdirSync(path.dirname(dbPath),{recursive:true});
     this.db=new DatabaseSync(dbPath);
+    // Local desktop tuning: WAL + NORMAL durability gives fast reads/writes while
+    // keeping committed data durable across ordinary application crashes.
+    this.db.exec(`
+      PRAGMA foreign_keys = ON;
+      PRAGMA journal_mode = WAL;
+      PRAGMA synchronous = NORMAL;
+      PRAGMA busy_timeout = 5000;
+      PRAGMA temp_store = MEMORY;
+      PRAGMA cache_size = -20000;
+    `);
     this.db.exec(fs.readFileSync(path.join(__dirname,'schema.sql'),'utf8'));
     this.#migrate();
   }
@@ -35,6 +45,9 @@ export class Store {
     this.db.exec(`UPDATE content_items SET match_key=semantic_key WHERE IFNULL(match_key,'')=''`);
     try{ this.db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_qa_fingerprint ON qa_issues(project_id,fingerprint) WHERE fingerprint IS NOT NULL`); }catch{}
     try{ this.db.exec(`CREATE INDEX IF NOT EXISTS idx_content_match ON content_items(project_id,match_key,language_code,canonical_state)`); }catch{}
+    try{ this.db.exec(`CREATE INDEX IF NOT EXISTS idx_content_browse ON content_items(project_id,book_code,chapter,content_type,language_role,canonical_state,sequence_no)`); }catch{}
+    try{ this.db.exec(`CREATE INDEX IF NOT EXISTS idx_qa_review ON qa_issues(project_id,status,severity,created_at)`); }catch{}
+    try{ this.db.exec(`CREATE INDEX IF NOT EXISTS idx_conflict_review ON import_conflicts(project_id,status,created_at)`); }catch{}
     for(const p of this.db.prepare('SELECT id FROM projects').all()) this.#seedAuthority(p.id);
   }
 

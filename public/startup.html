@@ -9,7 +9,7 @@
 *{box-sizing:border-box} body{margin:0;min-height:100vh;background:#f6f4ef;color:#20231f;display:grid;place-items:center}
 .card{width:min(560px,calc(100vw - 48px));background:#fff;border:1px solid #dedbd2;border-radius:22px;padding:38px;box-shadow:0 22px 70px rgba(37,45,38,.09)}
 .brand{display:flex;align-items:center;gap:14px;margin-bottom:28px}.mark{width:48px;height:48px;border-radius:14px;background:#183c2f;color:#fff;display:grid;place-items:center;font-weight:800}.brand strong{display:block;font-size:18px}.brand span{font-size:13px;color:#747970}
-h1{font-size:26px;margin:0 0 9px}p{line-height:1.55;color:#686d65;margin:0}.status{margin-top:26px;padding:16px 18px;background:#f3f5f1;border-radius:14px;display:flex;gap:12px;align-items:center}.dot{width:11px;height:11px;border-radius:50%;background:#b58a34;box-shadow:0 0 0 6px rgba(181,138,52,.12)}
+h1{font-size:26px;margin:0 0 9px}p{line-height:1.55;color:#686d65;margin:0}.status{margin-top:26px;padding:16px 18px;background:#f3f5f1;border-radius:14px;display:flex;gap:12px;align-items:center}.dot{width:11px;height:11px;border-radius:50%;background:#b58a34;box-shadow:0 0 0 6px rgba(181,138,52,.12);animation:pulse 1.4s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 0 10px rgba(181,138,52,.06)}}
 #error{display:none;margin-top:20px;padding:16px 18px;border-radius:14px;background:#fff1ef;border:1px solid #f0c5be;color:#8a3125}#error strong{display:block;margin-bottom:5px}small{display:block;margin-top:18px;color:#8a8e87}
 </style>
 </head>
@@ -18,11 +18,12 @@ h1{font-size:26px;margin:0 0 9px}p{line-height:1.55;color:#686d65;margin:0}.stat
     <div class="brand"><div class="mark">SB</div><div><strong>Study Bible Creator</strong><span>Local-first publishing QA</span></div></div>
     <h1>Opening your workspace…</h1>
     <p>The local database and publishing engine are starting. Your project data remains on this computer.</p>
-    <div class="status"><span class="dot"></span><div><strong>Starting local engine</strong><p>This normally takes only a few seconds.</p></div></div>
+    <div class="status"><span class="dot"></span><div><strong id="statusTitle">Starting local engine</strong><p id="statusDetail">This normally takes only a few seconds.</p></div></div>
     <div id="error"><strong>Startup problem</strong><span id="errorMessage"></span></div>
-    <small>If this screen remains for more than 10 seconds, close and reopen the app. A diagnostic <code>startup.log</code> is written to the application data folder.</small>
+    <small>If startup is unusually slow, keep this window open. The app now waits safely for first-run antivirus verification and records detailed diagnostics in <code>startup.log</code>.</small>
   </main>
 <script>
+window.updateStartupStatus=(title,detail)=>{document.getElementById('statusTitle').textContent=title;document.getElementById('statusDetail').textContent=detail;};
 window.showStartupError=(message)=>{document.querySelector('.status').style.display='none';document.getElementById('error').style.display='block';document.getElementById('errorMessage').textContent=message;document.querySelector('h1').textContent='Study Bible Creator could not start';};
 </script>
 </body>

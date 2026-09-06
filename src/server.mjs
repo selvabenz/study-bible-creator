@@ -8,12 +8,19 @@ import { previewImport } from './core/importer.mjs';
 import { runLocalQa } from './core/qa-engine.mjs';
 import { exportItems } from './core/exporter.mjs';
 
+const bootStarted=performance.now();
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(__dirname,'..');
 const dataRoot=process.env.SBC_DESKTOP_DATA_DIR?path.resolve(process.env.SBC_DESKTOP_DATA_DIR):root;
 fs.mkdirSync(path.join(dataRoot,'data'),{recursive:true});
 fs.mkdirSync(path.join(dataRoot,'tmp'),{recursive:true});
-const store=new Store(path.join(dataRoot,'data','study_bible.db'));
+let store;
+try {
+  store=new Store(path.join(dataRoot,'data','study_bible.db'));
+} catch (error) {
+  console.error(`[startup] database_init_failed: ${error?.stack||error}`);
+  process.exit(70);
+}
 const desktopToken=process.env.SBC_DESKTOP_TOKEN||'';
 const packageVersion=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
 const APP_VERSION=process.env.SBC_APP_VERSION||packageVersion;
@@ -26,8 +33,17 @@ function send(res,status,body,type='application/json; charset=utf-8',headers={})
   else if(type.startsWith('application/json')) res.end(JSON.stringify(body));
   else res.end(body);
 }
-async function body(req){const chunks=[];for await(const c of req)chunks.push(c);return Buffer.concat(chunks);}
-function jsonBody(buf){try{return JSON.parse(buf.toString('utf8')||'{}');}catch{throw new Error('Invalid JSON request body');}}
+const MAX_REQUEST_BYTES=128*1024*1024;
+async function body(req){
+  const chunks=[]; let total=0;
+  for await(const c of req){
+    total+=c.length;
+    if(total>MAX_REQUEST_BYTES){const e=new Error('Request body exceeds the 128 MB local safety limit');e.statusCode=413;throw e;}
+    chunks.push(c);
+  }
+  return Buffer.concat(chunks,total);
+}
+function jsonBody(buf){try{return JSON.parse(buf.toString('utf8')||'{}');}catch{const e=new Error('Invalid JSON request body');e.statusCode=400;throw e;}}
 function qInt(url,key,fallback=null){const v=url.searchParams.get(key);if(v==null||v==='')return fallback;const n=Number(v);return Number.isFinite(n)?n:fallback;}
 function contentDisposition(name){return `attachment; filename="${String(name).replace(/["\r\n]/g,'_')}"`;}
 
@@ -135,8 +151,22 @@ const server=http.createServer(async(req,res)=>{
     if(!file.startsWith(path.join(root,'public'))) return send(res,403,'Forbidden','text/plain');
     if(fs.existsSync(file)&&fs.statSync(file).isFile()) return send(res,200,fs.readFileSync(file),mime[path.extname(file)]||'application/octet-stream');
     return send(res,404,'Not found','text/plain');
-  }catch(e){console.error(e);send(res,500,{error:e.message});}
+  }catch(e){console.error(e);send(res,e.statusCode||500,{error:e.message});}
 });
 
+server.on('clientError',(error,socket)=>{
+  console.error(`[http] client_error: ${error.message}`);
+  if(socket.writable) socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+});
+server.on('error',error=>{
+  console.error(`[startup] server_error: ${error?.stack||error}`);
+});
+process.on('unhandledRejection',error=>console.error(`[fatal] unhandled_rejection: ${error?.stack||error}`));
+process.on('uncaughtException',error=>{console.error(`[fatal] uncaught_exception: ${error?.stack||error}`);process.exitCode=71;});
+
 const PORT=process.env.PORT||4173;
-server.listen(PORT,'127.0.0.1',()=>console.log(`Study Bible Creator v${APP_VERSION}: http://127.0.0.1:${PORT}`));
+server.listen(PORT,'127.0.0.1',()=>{
+  const startupMs=Math.round((performance.now()-bootStarted)*10)/10;
+  console.log(`Study Bible Creator v${APP_VERSION}: http://127.0.0.1:${PORT}`);
+  console.log(`[startup] ready_ms=${startupMs}`);
+});

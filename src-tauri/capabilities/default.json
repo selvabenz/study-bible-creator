@@ -2,13 +2,19 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-capability",
   "description": "Desktop capability for Study Bible Creator",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     {
       "identifier": "shell:allow-spawn",
       "allow": [
-        { "name": "binaries/node", "sidecar": true, "args": true }
+        {
+          "name": "binaries/sbc-engine",
+          "sidecar": true,
+          "args": true
+        }
       ]
     }
   ]

@@ -16,7 +16,14 @@ const triple = process.platform==='win32' ? (process.arch==='arm64'?'aarch64-pc-
   : process.platform==='darwin' ? (process.arch==='arm64'?'aarch64-apple-darwin':'x86_64-apple-darwin')
   : process.arch==='arm64' ? 'aarch64-unknown-linux-gnu' : 'x86_64-unknown-linux-gnu';
 const ext=process.platform==='win32'?'.exe':'';
-const dst=path.join(binaries,`node-${triple}${ext}`);
+const dst=path.join(binaries,`sbc-engine-${triple}${ext}`);
+
+// Remove any stale cached sidecar copy before bundling. Tauri may cache external
+// binaries under target/release between builds, which is unsafe for upgrades.
+for (const candidate of [
+  path.join(tauri,'target','release',`sbc-engine${ext}`),
+  path.join(tauri,'target','release',`node${ext}`)
+]) fs.rmSync(candidate,{force:true});
 fs.copyFileSync(process.execPath,dst);
 if(process.platform!=='win32') fs.chmodSync(dst,0o755);
 console.log(`Prepared desktop resources and Node sidecar for ${triple}`);

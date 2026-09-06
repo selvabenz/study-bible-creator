@@ -17,7 +17,7 @@ test('package, Tauri, and Cargo versions are aligned',()=>{
 
 test('Tauri bundles Node as an external sidecar and app resources',()=>{
   const tauri=JSON.parse(fs.readFileSync(path.join(root,'src-tauri','tauri.conf.json'),'utf8'));
-  assert.deepEqual(tauri.bundle.externalBin,['binaries/node']);
+  assert.deepEqual(tauri.bundle.externalBin,['binaries/sbc-engine']);
   assert.ok(tauri.bundle.resources.includes('resources/app/**/*'));
 });
 

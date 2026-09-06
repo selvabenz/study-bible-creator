@@ -27,5 +27,5 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci --ignore-scripts
-      - name: Run deterministic test suite
-        run: npm test
+      - name: Run unit, sidecar, and performance suites
+        run: npm run test:all

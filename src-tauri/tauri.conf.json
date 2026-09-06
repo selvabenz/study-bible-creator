@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Study Bible Creator",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "identifier": "org.bridgeconn.studybiblecreator",
   "build": {
     "beforeBuildCommand": "node scripts/prepare-desktop.mjs",
@@ -18,7 +18,7 @@
     "active": true,
     "targets": "all",
     "externalBin": [
-      "binaries/node"
+      "binaries/sbc-engine"
     ],
     "resources": [
       "resources/app/**/*"
@@ -27,6 +27,9 @@
       "webviewInstallMode": {
         "type": "downloadBootstrapper",
         "silent": true
+      },
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsh"
       }
     },
     "macOS": {

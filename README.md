@@ -1,52 +1,76 @@
-# Study Bible Creator v0.5.2
-## v0.5.2 desktop runtime hotfix
+# Study Bible Creator v0.5.5
 
-The Windows release now uses the GUI subsystem, creates a visible Tauri startup window immediately, verifies the bundled local engine before loading the workspace, and writes `startup.log` for startup diagnostics.
+Local-first multilingual Study Bible publishing QA application. v0.5.5 is the M2 desktop runtime-hardening release that must pass before M3 / v0.6.0 begins.
 
-
-Local-first multilingual Study Bible publishing QA application.
-
-## v0.5.2 — M2 Native Desktop Foundation
-v0.5.2 adds a Tauri 2 desktop shell for Windows, macOS and Linux while preserving the proven SQLite/import/conflict/QA core.
-
-### Desktop architecture
-- Tauri 2 native shell
+## Desktop architecture
+- Tauri 2 native shell for Windows, macOS and Linux
 - HTML/CSS/JavaScript editorial workspace
-- bundled Node 22 runtime sidecar prepared from the build host
-- SQLite project database stored in the OS app-data directory
-- local server bound only to `127.0.0.1`
-- per-launch authenticated desktop session
+- bundled Node 22 runtime under the app-owned `sbc-engine` sidecar name
+- SQLite project database in the OS app-data directory
+- loopback-only local server (`127.0.0.1`) with per-launch desktop session authentication
 - single-instance protection
 - no cloud AI required
+- Scripture remains protected from silent replacement
 
-## Import formats
-USFM/SFM, CSV, TSV, JSON, DOCX, and legacy DOC.
+## Import and export
+Import: USFM/SFM, CSV, TSV, JSON, DOCX, and legacy DOC (through the isolated local conversion adapter).
 
-## Export formats
-USFM/SFM, CSV, TSV, JSON, and DOCX bilingual editorial exchange.
+Export: USFM/SFM, CSV, TSV, JSON, and DOCX bilingual editorial exchange.
 
-## Development
-Requires Node.js 22.5+ and Rust 1.77.2+ for the desktop shell.
+## Verification
+Run the complete local verification suite:
 
 ```bash
-npm test
+npm run test:all
+```
+
+It runs:
+- 50 unit/regression/edge-case tests
+- exact packaged-sidecar startup + import/QA/export smoke
+- local HTTP/API functional smoke across the current application surface
+- 5,000-verse (~10,102 active records) performance workload with explicit time and memory budgets
+
+Run the authoritative Matthew corpus smoke when the fresh source paths are available:
+
+```bash
+SBC_MAT_SOURCE=/path/41MATGSB.SFM \
+SBC_MAT_TARGET=/path/41MATIRVTam.SFM \
+SBC_MAT_CORRECTIONS_DIR=/path/corrected-docx \
+SBC_MAT_MAPS_DIR=/path/maps-docx \
+npm run qa:smoke
+```
+
+## Desktop build verification
+`Desktop Installer Smoke Build` now does more than compile. On Windows it builds the NSIS installer, installs that actual `.exe` silently, launches the installed application, and fails unless the local engine becomes ready and the main workspace is navigated successfully.
+
+The first v0.5.5 installation should be done after closing and uninstalling the earlier pre-v0.5.5 build once. Older builds used a generic bundled `node.exe`; v0.5.5 and later use the uniquely owned `sbc-engine.exe`, which can be upgraded safely without touching unrelated Node processes.
+
+## Development
+Requires Node.js 22.5+ and Rust/Tauri tooling for native desktop builds.
+
+```bash
+npm run test:all
 npm run desktop:dev
 ```
 
-Build native installer(s):
+Build native installers:
 
 ```bash
 npm run desktop:build
 ```
 
-Installed users do not need Node.js; the release bundle includes the Node sidecar runtime.
+Installed users do not need Node.js separately.
 
 ## Release
-Normal pushes run CI. After CI and native installer smoke builds succeed, tag the version:
+1. Push v0.5.5 source to `main`.
+2. Run **Actions → Desktop Installer Smoke Build** and require all platform jobs to pass.
+3. Only then create and push the matching `v0.5.5` tag.
 
 ```bash
-git tag v0.5.2
-git push origin v0.5.2
+git tag v0.5.5
+git push origin v0.5.5
 ```
 
-See `docs/TEST_REPORT_v0.5.2.md`, `docs/RELEASE_NOTES_v0.5.2.md`, and `docs/COMMIT_v0.5.2.md`.
+The tag triggers the automated Versioned Release workflow.
+
+See `docs/TEST_REPORT_v0.5.5.md`, `docs/TEST_MATRIX_v0.5.5.md`, `docs/RUNTIME_HARDENING_v0.5.5.md`, and `docs/RELEASE_NOTES_v0.5.5.md`.

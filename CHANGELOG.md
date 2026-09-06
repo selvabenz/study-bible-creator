@@ -1,3 +1,23 @@
+## [0.5.5] - 2026-09-06
+
+### Fixed
+- Reworked packaged desktop startup so the local engine launches asynchronously and the startup window remains responsive.
+- Replaced the opaque 10-second startup failure with a 45-second guarded readiness window, live slow-start status, and detailed sidecar stdout/stderr/exit diagnostics in `startup.log`.
+- Renamed the bundled runtime from the generic `node` sidecar to the app-owned `sbc-engine` sidecar and added safe Windows upgrade/uninstall hooks for stale sidecars.
+- Added explicit database-startup, server-startup, malformed-request, and request-size diagnostics.
+
+### Performance
+- Enabled SQLite WAL mode, `synchronous=NORMAL`, bounded busy waits, memory temp storage, a bounded cache, and browse/QA/conflict indexes.
+- Added measurable startup and workload performance budgets to CI.
+
+### Verification
+- Added an exact copied-sidecar integration smoke test.
+- Added a full local API functional smoke covering project creation, import preview/commit, duplicate detection, browsing, pairing, vocabulary, rules, QA, issue status, exports, conflicts, authentication, and error paths.
+- Added a 5,000-verse synthetic performance workload (~10,102 active records).
+- Added a Windows GitHub smoke step that silently installs the real NSIS `.exe`, launches the installed application, and requires `main_window_navigated=true` before the installer artifact is accepted.
+- Expanded static/unit regression coverage to 50 passing tests.
+- Revalidated the fresh Matthew corpus: 1,067 English verses, 1,071 Tamil verses, 4 expected versification differences, 10,489 database items, 3,250 protected items, 268 authority conflicts, 53 deterministic QA findings, and 11 map/chart DOCX resources.
+
 ## [0.5.4] - 2026-09-06
 
 ### Fixed
