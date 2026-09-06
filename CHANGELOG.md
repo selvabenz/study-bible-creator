@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.2 — Windows runtime startup hotfix
+
+- Fixed the Windows release executable opening in Windows Terminal instead of behaving as a GUI application.
+- Added the Windows GUI subsystem attribute to the Tauri entry point.
+- Added an always-visible native startup window before the local Node/SQLite sidecar launches.
+- Added robust packaged-resource discovery for the local server entrypoint.
+- Added local-engine health verification before navigating the webview to the application.
+- Added a persistent `startup.log` in the application data directory and a user-visible startup failure screen.
+- Desktop health/version reporting now follows the packaged application version.
+- Added regression coverage for the release-mode Windows runtime bootstrap.
+
 ## [0.5.1] - 2026-09-06
 
 ### Fixed

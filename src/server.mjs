@@ -15,6 +15,7 @@ fs.mkdirSync(path.join(dataRoot,'data'),{recursive:true});
 fs.mkdirSync(path.join(dataRoot,'tmp'),{recursive:true});
 const store=new Store(path.join(dataRoot,'data','study_bible.db'));
 const desktopToken=process.env.SBC_DESKTOP_TOKEN||'';
+const APP_VERSION=process.env.SBC_APP_VERSION||'0.5.2';
 const previews=new Map();
 
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png'};
@@ -32,7 +33,7 @@ function contentDisposition(name){return `attachment; filename="${String(name).r
 const server=http.createServer(async(req,res)=>{
   try{
     const url=new URL(req.url,'http://localhost');
-    if(url.pathname==='/api/health') return send(res,200,{ok:true,version:'0.5.0',localFirst:true,aiEnabled:false,desktop:Boolean(desktopToken)});
+    if(url.pathname==='/api/health') return send(res,200,{ok:true,version:APP_VERSION,localFirst:true,aiEnabled:false,desktop:Boolean(desktopToken)});
     if(desktopToken && url.pathname==='/__desktop_auth'){
       if(url.searchParams.get('token')!==desktopToken) return send(res,403,{error:'Forbidden'});
       res.writeHead(302,{'set-cookie':`sbc_session=${desktopToken}; HttpOnly; SameSite=Strict; Path=/`,'location':'/'}); return res.end();
@@ -137,4 +138,4 @@ const server=http.createServer(async(req,res)=>{
 });
 
 const PORT=process.env.PORT||4173;
-server.listen(PORT,'127.0.0.1',()=>console.log(`Study Bible Creator v0.5.0: http://127.0.0.1:${PORT}`));
+server.listen(PORT,'127.0.0.1',()=>console.log(`Study Bible Creator v${APP_VERSION}: http://127.0.0.1:${PORT}`));

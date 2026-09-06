@@ -5,13 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 
-test('v0.5.1 versions are aligned',()=>{
+test('v0.5.2 versions are aligned',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   const tauri=JSON.parse(fs.readFileSync(path.join(root,'src-tauri','tauri.conf.json'),'utf8'));
   const cargo=fs.readFileSync(path.join(root,'src-tauri','Cargo.toml'),'utf8');
-  assert.equal(pkg.version,'0.5.1');
-  assert.equal(tauri.version,'0.5.1');
-  assert.match(cargo,/version = "0\.5\.1"/);
+  assert.equal(pkg.version,'0.5.2');
+  assert.equal(tauri.version,'0.5.2');
+  assert.match(cargo,/version = "0\.5\.2"/);
 });
 
 test('Tauri bundles Node as an external sidecar and app resources',()=>{
