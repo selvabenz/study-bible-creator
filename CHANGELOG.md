@@ -93,3 +93,10 @@ All notable development changes to Study Bible Creator are recorded here.
 ## [0.1.0] - 2026-09-05
 
 - Initial local-first Study Bible Creator prototype with SQLite, basic import/export, protected Scripture, duplicate detection, and project creation.
+
+### Release pipeline repair (2026-09-06)
+- Restrict GitHub Release assets to the final Windows `.exe`, macOS `.dmg`, Linux `.AppImage` and `.deb` installers.
+- Stop uploading Tauri bundle internals, Linux AppDir libraries, scripts and duplicate resource files as release assets.
+- Clean stale assets when rebuilding an existing release tag through `workflow_dispatch`.
+- Generate checksums only for distributable installers, source archive and release manifest.
+- Keep native build matrices `fail-fast: false` and smoke artifacts installer-only.
