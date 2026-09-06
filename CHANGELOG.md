@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.3] - 2026-09-06
+
+### Fixed
+- Fixed packaged Windows desktop startup.
+- Prevented the Windows release build from opening a console window.
+- Added packaged-runtime startup diagnostics and resource discovery.
+- Fixed cross-platform DOCX ZIP handling on Windows.
+- Added complete Tauri icon resources for native builds.
+- Hardened GitHub release publishing to upload only final installer assets.
+- Added manual recovery support for existing release tags.
+
 ## 0.5.2 — Windows runtime startup hotfix
 
 - Fixed the Windows release executable opening in Windows Terminal instead of behaving as a GUI application.
