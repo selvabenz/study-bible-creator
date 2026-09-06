@@ -1,3 +1,9 @@
+## [0.5.4] - 2026-09-06
+
+### Fixed
+- Corrected release metadata so the `v0.5.4` Git tag matches package, Cargo, and Tauri application versions.
+- Retains the release-agnostic version alignment regression test and packaged Windows startup fixes.
+
 ## [0.5.3] - 2026-09-06
 
 ### Fixed
