@@ -39,10 +39,29 @@ jobs:
       - name: Verify version tag
         shell: bash
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          test "v$VERSION" = "${{ steps.release_tag.outputs.tag }}"
-          grep -q "version = \"$VERSION\"" src-tauri/Cargo.toml
-          grep -q "\"version\": \"$VERSION\"" src-tauri/tauri.conf.json
+          set -euo pipefail
+          TAG="${{ steps.release_tag.outputs.tag }}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAURI_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          CARGO_VERSION=$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' src-tauri/Cargo.toml | head -n 1)
+
+          echo "Release tag:        $TAG"
+          echo "package.json:       $PACKAGE_VERSION"
+          echo "Cargo.toml:         $CARGO_VERSION"
+          echo "tauri.conf.json:    $TAURI_VERSION"
+
+          if [ "$TAG" != "v$PACKAGE_VERSION" ]; then
+            echo "::error::Tag $TAG does not match package.json version $PACKAGE_VERSION"
+            exit 1
+          fi
+          if [ "$CARGO_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "::error::Cargo.toml version $CARGO_VERSION does not match package.json version $PACKAGE_VERSION"
+            exit 1
+          fi
+          if [ "$TAURI_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "::error::tauri.conf.json version $TAURI_VERSION does not match package.json version $PACKAGE_VERSION"
+            exit 1
+          fi
 
   desktop:
     needs: verify
